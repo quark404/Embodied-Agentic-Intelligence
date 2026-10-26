@@ -1,5 +1,7 @@
 # Embodied Agentic Intelligence
 
+**项目任务规划（中文）：[我们要研究什么、如何实验、希望证明什么](docs/任务规划.md)。**
+
 Research scaffold for measuring direct action, tool use, and planner–tool–memory interaction under the same episode budget. The current executable is a **synthetic interface smoke test**, not a robotics benchmark or a VLM result.
 
 ```bash
