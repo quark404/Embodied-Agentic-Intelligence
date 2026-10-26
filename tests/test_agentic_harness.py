@@ -159,6 +159,16 @@ class HarnessTests(unittest.TestCase):
             self.assertTrue(result["success"])
             self.assertEqual(result["completed_subtasks"], ["open"])
 
+        class TerminalFailureEnvironment(SyntheticEnvironment):
+            def execute(self, tool, args):
+                from embodied_agentic.harness import StepResult
+                outcome = super().execute(tool, args)
+                return StepResult(outcome.observation, outcome.receipt, episode_end=True)
+
+        with tempfile.TemporaryDirectory() as root:
+            result = self.harness(root, environment=TerminalFailureEnvironment()).run(TASK)
+            self.assertEqual(result["status"], "environment_terminated_without_success")
+
     def test_episode_isolation_and_time_budget(self):
         with tempfile.TemporaryDirectory() as root:
             harness = self.harness(root)
@@ -266,6 +276,25 @@ class HarnessTests(unittest.TestCase):
             self.assertEqual([r["success"] for r in rows if r["condition"] == "tool_memory"],
                              [True, True])
             self.assertTrue((Path(root) / "results.json").exists())
+
+    def test_paired_runner_can_select_each_conditions_runtime(self):
+        calls = []
+        def make_env(label):
+            calls.append(label)
+            return SyntheticEnvironment()
+        conditions = [
+            Condition("pyrualean_arm", FixedPlanner, RulePolicy, TOOLS,
+                      environment_factory=lambda: make_env("pyrualean_arm")),
+            Condition("roboicl_arm", FixedPlanner, RulePolicy, TOOLS,
+                      environment_factory=lambda: make_env("roboicl_arm")),
+        ]
+        with tempfile.TemporaryDirectory() as root:
+            rows = run_paired(tasks=[dict(TASK, seed=0)], conditions=conditions,
+                environment_factory=lambda: make_env("fallback"),
+                base_config=HarnessConfig(allowed_tools=TOOLS), output_dir=root,
+                run_id="two-runtimes")
+        self.assertEqual(calls, ["pyrualean_arm", "roboicl_arm"])
+        self.assertEqual(len(rows), 2)
 
 
 if __name__ == "__main__":

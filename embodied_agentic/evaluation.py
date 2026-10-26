@@ -18,6 +18,7 @@ class Condition:
     planner_factory: Callable[[], Planner]
     policy_factory: Callable[[], AgentPolicy]
     allowed_tools: tuple[str, ...]
+    environment_factory: Callable[[], HarnessEnvironment] | None = None
 
 
 def run_paired(*, tasks: list[dict], conditions: list[Condition],
@@ -53,7 +54,7 @@ def run_paired(*, tasks: list[dict], conditions: list[Condition],
             episode_id = f"{run_id}-{artifact_id}"
             episode_root = root / artifact_id
             config = replace(base_config, allowed_tools=condition.allowed_tools)
-            harness = AgenticHarness(environment=environment_factory(),
+            harness = AgenticHarness(environment=(condition.environment_factory or environment_factory)(),
                 planner=condition.planner_factory(), policy=condition.policy_factory(),
                 memory=SubtaskImageMemory(episode_root / "memory"), config=config,
                 trace_path=episode_root / "trace.jsonl")

@@ -35,12 +35,16 @@ class HarnessChatPlanner:
     """Ask a multimodal model for ordered remaining subtasks, including replans."""
 
     def __init__(self, endpoint: str, model: str, *, allowed_tools: tuple[str, ...],
-                 api_key_env: str = "MODEL_API_KEY", transport=None):
+                 api_key_env: str = "MODEL_API_KEY", transport=None,
+                 tool_schemas: dict | None = None):
         self.endpoint = endpoint.rstrip("/") + "/chat/completions"
         self.model = model
         self.allowed_tools = allowed_tools
         self.api_key_env = api_key_env
         self.transport = transport or self._post
+        self.tool_schemas = tool_schemas or {}
+        if not set(self.tool_schemas).issubset(allowed_tools):
+            raise ValueError("Tool schemas must match allowed tool names")
 
     def _post(self, payload: dict) -> dict:
         return _post_json(self.endpoint, self.api_key_env, payload)
@@ -51,7 +55,8 @@ class HarnessChatPlanner:
                 "episode_id": task["episode_id"], "completed_subtasks": completed,
                 "failure_receipt": failure,
                 "current_state": {k: v for k, v in observation.items() if k != "images"},
-                "allowed_tools": self.allowed_tools}
+                "allowed_tools": self.allowed_tools,
+                "tool_schemas": self.tool_schemas}
         content = [{"type": "text", "text": json.dumps(info, ensure_ascii=False)}]
         for camera, data in observation["images"].items():
             content.extend(({"type": "text", "text": f"Current image, camera={camera}"}, _image(data)))
@@ -79,12 +84,16 @@ class HarnessChatPolicy:
     """Pass current and recalled images to a model; validate its one-step decision."""
 
     def __init__(self, endpoint: str, model: str, *, allowed_tools: tuple[str, ...],
-                 api_key_env: str = "MODEL_API_KEY", transport=None):
+                 api_key_env: str = "MODEL_API_KEY", transport=None,
+                 tool_schemas: dict | None = None):
         self.endpoint = endpoint.rstrip("/") + "/chat/completions"
         self.model = model
         self.allowed_tools = allowed_tools
         self.api_key_env = api_key_env
         self.transport = transport or self._post
+        self.tool_schemas = tool_schemas or {}
+        if not set(self.tool_schemas).issubset(allowed_tools):
+            raise ValueError("Tool schemas must match allowed tool names")
 
     def _post(self, payload: dict) -> dict:
         return _post_json(self.endpoint, self.api_key_env, payload)
@@ -103,6 +112,7 @@ class HarnessChatPolicy:
                   "state": {k: v for k, v in context.observation.items() if k != "images"},
                   "recent_events": events, "completed_subtasks": context.completed_subtasks,
                   "allowed_tools": self.allowed_tools,
+                  "tool_schemas": self.tool_schemas,
                   "recalled_images": [{"subtask_id": r.record.subtask_id,
                                        "instruction": r.record.instruction,
                                        "camera": r.record.camera, "sha256": r.record.sha256}

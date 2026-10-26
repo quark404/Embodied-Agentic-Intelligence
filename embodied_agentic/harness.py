@@ -34,6 +34,7 @@ class StepResult:
     receipt: dict
     subtask_done: bool = False
     task_done: bool = False
+    episode_end: bool = False
 
 
 @dataclass(frozen=True)
@@ -119,9 +120,11 @@ class AgenticHarness:
         recalled: tuple[RecalledImage, ...] = ()
         status = "error"
         error = None
+        cleanup_error = None
         observation = None
         plan: list[Subtask] = []
         index = 0
+        active_subtask_id = None
 
         def emit(event: dict):
             # Raw images are persisted only in SubtaskImageMemory, never in trace JSON.
@@ -149,6 +152,11 @@ class AgenticHarness:
                     status = "decision_budget_exhausted"
                     break
                 subtask = plan[index]
+                if active_subtask_id != subtask.id:
+                    begin = getattr(self.environment, "begin_subtask", None)
+                    if begin is not None:
+                        begin(subtask)
+                    active_subtask_id = subtask.id
                 if not any(e.get("event") == "subtask_start" and e.get("subtask_id") == subtask.id for e in events):
                     snapshots = self.memory.capture(task_id=task["task_id"],
                                                     episode_id=task["episode_id"], subtask_id=subtask.id,
@@ -190,6 +198,7 @@ class AgenticHarness:
                                     if e.get("event") == "tool" and not e["receipt"].get("ok")), None)
                     plan = self._plan(task, observation, tuple(completed), failure)
                     index = 0
+                    active_subtask_id = None
                     replans += 1
                     recalled = ()
                     emit({"event": "replan", "subtasks": [asdict(s) for s in plan],
@@ -214,7 +223,8 @@ class AgenticHarness:
                     self._images(observation)
                     emit({"event": "tool", "subtask_id": subtask.id, "tool": decision.tool,
                           "args": decision.args, "receipt": result.receipt,
-                          "subtask_done": result.subtask_done, "task_done": result.task_done})
+                          "subtask_done": result.subtask_done, "task_done": result.task_done,
+                          "episode_end": result.episode_end})
                     recalled = ()
                     if time.monotonic() - start >= self.config.max_seconds:
                         status = "time_budget_exhausted"
@@ -224,6 +234,9 @@ class AgenticHarness:
                         emit({"event": "subtask_complete", "subtask_id": subtask.id})
                     if result.task_done:
                         status = "success"
+                        break
+                    if result.episode_end:
+                        status = "environment_terminated_without_success"
                         break
                     if result.subtask_done:
                         if index == len(plan) - 1:
@@ -236,10 +249,17 @@ class AgenticHarness:
             status = "error"
             error = f"{type(exc).__name__}: {exc}"
             emit({"event": "error", "message": error})
+        finally:
+            close = getattr(self.environment, "close", None)
+            if close is not None:
+                try:
+                    close()
+                except Exception as exc:
+                    cleanup_error = f"{type(exc).__name__}: {exc}"
         summary = {"task_id": task["task_id"], "episode_id": task["episode_id"],
                    "status": status, "success": status == "success",
                    "completed_subtasks": completed, "decisions": decisions,
                    "tool_calls": tool_calls, "recall_calls": recall_calls,
                    "replans": replans, "elapsed_seconds": round(time.monotonic() - start, 3),
-                   "error": error, "events": events}
+                   "error": error, "cleanup_error": cleanup_error, "events": events}
         return summary
