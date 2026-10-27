@@ -47,6 +47,8 @@ class HarnessConfig:
     max_subtasks: int = 20
     recall_limit: int = 4
     allowed_tools: tuple[str, ...] = ()
+    enable_image_memory: bool = True
+    enable_replanning: bool = True
 
     def __post_init__(self):
         if (any(x < 1 for x in (self.max_decisions, self.max_tool_calls,
@@ -158,10 +160,11 @@ class AgenticHarness:
                         begin(subtask)
                     active_subtask_id = subtask.id
                 if not any(e.get("event") == "subtask_start" and e.get("subtask_id") == subtask.id for e in events):
-                    snapshots = self.memory.capture(task_id=task["task_id"],
+                    snapshots = (self.memory.capture(task_id=task["task_id"],
                                                     episode_id=task["episode_id"], subtask_id=subtask.id,
                                                     instruction=subtask.instruction, tags=subtask.tags,
                                                     images=self._images(observation))
+                                 if self.config.enable_image_memory else [])
                     emit({"event": "subtask_start", "subtask_id": subtask.id,
                           "images": [{"camera": r.camera, "sha256": r.sha256,
                                       "filename": r.filename} for r in snapshots]})
@@ -176,6 +179,8 @@ class AgenticHarness:
                 if not isinstance(decision, Decision):
                     raise ValueError("Policy must return a Decision")
                 if decision.kind == "recall":
+                    if not self.config.enable_image_memory:
+                        raise ValueError("Image recall is disabled for this condition")
                     if recall_calls >= self.config.max_recall_calls:
                         status = "recall_budget_exhausted"
                         break
@@ -191,6 +196,8 @@ class AgenticHarness:
                                       "camera": r.record.camera, "sha256": r.record.sha256}
                                      for r in recalled]})
                 elif decision.kind == "replan":
+                    if not self.config.enable_replanning:
+                        raise ValueError("Replanning is disabled for this condition")
                     if replans >= self.config.max_replans:
                         status = "replan_budget_exhausted"
                         break

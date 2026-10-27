@@ -6,7 +6,8 @@ import unittest
 from pathlib import Path
 
 from embodied_agentic.harness import AgenticHarness, Decision, HarnessConfig
-from embodied_agentic.evaluation import Condition, run_paired
+from embodied_agentic.evaluation import (Condition, GoalOnlyPlanner,
+                                         make_ablation_conditions, run_paired)
 from embodied_agentic.harness_model import HarnessChatPlanner, HarnessChatPolicy
 from embodied_agentic.image_memory import SubtaskImageMemory
 from embodied_agentic.synthetic import FixedPlanner, RulePolicy, SyntheticEnvironment, _png, run_demo
@@ -295,6 +296,51 @@ class HarnessTests(unittest.TestCase):
                 run_id="two-runtimes")
         self.assertEqual(calls, ["pyrualean_arm", "roboicl_arm"])
         self.assertEqual(len(rows), 2)
+
+    def test_ablation_disables_memory_and_replanning_in_code(self):
+        class RecallPolicy:
+            def decide(self, context):
+                return Decision("recall", recall_subtask_id="whole_task")
+
+        with tempfile.TemporaryDirectory() as root:
+            rows = run_paired(tasks=[dict(TASK, seed=0)], conditions=[
+                Condition("direct", GoalOnlyPlanner, RecallPolicy, TOOLS,
+                          enable_image_memory=False, enable_replanning=False)],
+                environment_factory=SyntheticEnvironment,
+                base_config=HarnessConfig(allowed_tools=TOOLS), output_dir=root,
+                run_id="no-memory")
+            self.assertFalse(rows[0]["success"])
+            self.assertIn("Image recall is disabled", rows[0]["error"])
+            self.assertFalse(rows[0]["enable_image_memory"])
+            self.assertFalse(rows[0]["enable_replanning"])
+            self.assertFalse((Path(rows[0]["artifact_dir"]) / "memory" / "manifest.jsonl").exists())
+
+        policy = HarnessChatPolicy("http://localhost:8000/v1", "qwen", allowed_tools=TOOLS,
+            allowed_decisions=("tool",),
+            transport=lambda payload: {"choices": [{"message": {"content":
+                json.dumps({"kind": "recall", "recall_subtask_id": "whole_task"})}}]})
+        with tempfile.TemporaryDirectory() as root:
+            harness = self.harness(root, policy=policy,
+                config=HarnessConfig(allowed_tools=TOOLS, enable_image_memory=False,
+                                     enable_replanning=False))
+            harness.planner = GoalOnlyPlanner()
+            result = harness.run(TASK)
+            self.assertIn("disabled decision kind", result["error"])
+
+    def test_standard_ablation_matrix_shares_model_planner_and_tools(self):
+        conditions = make_ablation_conditions(
+            direct_policy_factory=RulePolicy, tool_policy_factory=RulePolicy,
+            planned_policy_factory=RulePolicy, memory_policy_factory=RulePolicy,
+            planner_factory=FixedPlanner, direct_tools=("unlock", "place"),
+            tool_tools=TOOLS)
+        self.assertEqual([c.name for c in conditions],
+                         ["A_direct", "B_tools", "C_plan_tools", "D_plan_tools_memory"])
+        self.assertEqual([c.enable_image_memory for c in conditions],
+                         [False, False, False, True])
+        self.assertEqual([c.enable_replanning for c in conditions],
+                         [False, False, True, True])
+        self.assertEqual({c.allowed_tools for c in conditions[1:]}, {TOOLS})
+        self.assertIs(conditions[2].planner_factory, conditions[3].planner_factory)
 
 
 if __name__ == "__main__":

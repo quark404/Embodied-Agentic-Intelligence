@@ -85,15 +85,19 @@ class HarnessChatPolicy:
 
     def __init__(self, endpoint: str, model: str, *, allowed_tools: tuple[str, ...],
                  api_key_env: str = "MODEL_API_KEY", transport=None,
-                 tool_schemas: dict | None = None):
+                 tool_schemas: dict | None = None,
+                 allowed_decisions: tuple[str, ...] = ("tool", "recall", "replan")):
         self.endpoint = endpoint.rstrip("/") + "/chat/completions"
         self.model = model
         self.allowed_tools = allowed_tools
         self.api_key_env = api_key_env
         self.transport = transport or self._post
         self.tool_schemas = tool_schemas or {}
+        self.allowed_decisions = allowed_decisions
         if not set(self.tool_schemas).issubset(allowed_tools):
             raise ValueError("Tool schemas must match allowed tool names")
+        if not allowed_decisions or not set(allowed_decisions).issubset({"tool", "recall", "replan"}):
+            raise ValueError("Unsupported allowed decision kinds")
 
     def _post(self, payload: dict) -> dict:
         return _post_json(self.endpoint, self.api_key_env, payload)
@@ -112,6 +116,7 @@ class HarnessChatPolicy:
                   "state": {k: v for k, v in context.observation.items() if k != "images"},
                   "recent_events": events, "completed_subtasks": context.completed_subtasks,
                   "allowed_tools": self.allowed_tools,
+                  "allowed_decisions": self.allowed_decisions,
                   "tool_schemas": self.tool_schemas,
                   "recalled_images": [{"subtask_id": r.record.subtask_id,
                                        "instruction": r.record.instruction,
@@ -128,7 +133,7 @@ class HarnessChatPolicy:
             content.append(self._image(recalled.data))
         response = self.transport({"model": self.model, "temperature": 0,
             "messages": [{"role": "system", "content":
-                "Return exactly one JSON object. Choices: "
+                "Return exactly one JSON object, using only allowed_decisions. Choices: "
                 "{\"kind\":\"tool\",\"tool\":name,\"args\":{...}}, "
                 "{\"kind\":\"recall\",\"recall_subtask_id\":id}, or "
                 "{\"kind\":\"replan\"}. Use only allowed tools. "
@@ -140,6 +145,8 @@ class HarnessChatPolicy:
         if not isinstance(parsed, dict) or parsed.get("kind") not in ("tool", "recall", "replan"):
             raise ValueError("Model returned an invalid decision")
         kind = parsed["kind"]
+        if kind not in self.allowed_decisions:
+            raise ValueError("Model requested a disabled decision kind")
         if kind == "tool":
             if parsed.get("tool") not in self.allowed_tools or not isinstance(parsed.get("args"), dict):
                 raise ValueError("Model requested an invalid tool call")

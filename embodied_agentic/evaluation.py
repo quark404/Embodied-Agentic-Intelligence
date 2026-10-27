@@ -8,7 +8,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Callable
 
-from .harness import AgentPolicy, AgenticHarness, HarnessConfig, HarnessEnvironment, Planner
+from .harness import AgentPolicy, AgenticHarness, HarnessConfig, HarnessEnvironment, Planner, Subtask
 from .image_memory import SubtaskImageMemory
 
 
@@ -19,6 +19,42 @@ class Condition:
     policy_factory: Callable[[], AgentPolicy]
     allowed_tools: tuple[str, ...]
     environment_factory: Callable[[], HarnessEnvironment] | None = None
+    enable_image_memory: bool = True
+    enable_replanning: bool = True
+
+
+class GoalOnlyPlanner:
+    """One episode-wide subtask for direct and tool-only baselines."""
+
+    def plan(self, task: dict, observation: dict, completed: tuple[str, ...],
+             failure: dict | None) -> list[Subtask]:
+        return [Subtask("whole_task", task.get("goal") or task["task_id"])]
+
+
+def make_ablation_conditions(*, direct_policy_factory: Callable[[], AgentPolicy],
+                             tool_policy_factory: Callable[[], AgentPolicy],
+                             planned_policy_factory: Callable[[], AgentPolicy],
+                             memory_policy_factory: Callable[[], AgentPolicy],
+                             planner_factory: Callable[[], Planner],
+                             direct_tools: tuple[str, ...],
+                             tool_tools: tuple[str, ...]) -> list[Condition]:
+    """Build A/B/C/D with B–D sharing the exact same robot tool allowlist.
+
+    The caller still must pin identical model weights, native tasks, observations,
+    action implementation, and budgets across comparable arms.
+    """
+    if not direct_tools or not tool_tools:
+        raise ValueError("Direct actions and robot tools must be specified")
+    return [
+        Condition("A_direct", GoalOnlyPlanner, direct_policy_factory, direct_tools,
+                  enable_image_memory=False, enable_replanning=False),
+        Condition("B_tools", GoalOnlyPlanner, tool_policy_factory, tool_tools,
+                  enable_image_memory=False, enable_replanning=False),
+        Condition("C_plan_tools", planner_factory, planned_policy_factory, tool_tools,
+                  enable_image_memory=False, enable_replanning=True),
+        Condition("D_plan_tools_memory", planner_factory, memory_policy_factory, tool_tools,
+                  enable_image_memory=True, enable_replanning=True),
+    ]
 
 
 def run_paired(*, tasks: list[dict], conditions: list[Condition],
@@ -53,7 +89,9 @@ def run_paired(*, tasks: list[dict], conditions: list[Condition],
             artifact_id = hashlib.sha256(identity.encode()).hexdigest()[:20]
             episode_id = f"{run_id}-{artifact_id}"
             episode_root = root / artifact_id
-            config = replace(base_config, allowed_tools=condition.allowed_tools)
+            config = replace(base_config, allowed_tools=condition.allowed_tools,
+                             enable_image_memory=condition.enable_image_memory,
+                             enable_replanning=condition.enable_replanning)
             harness = AgenticHarness(environment=(condition.environment_factory or environment_factory)(),
                 planner=condition.planner_factory(), policy=condition.policy_factory(),
                 memory=SubtaskImageMemory(episode_root / "memory"), config=config,
@@ -68,6 +106,8 @@ def run_paired(*, tasks: list[dict], conditions: list[Condition],
                                    "max_replans": config.max_replans,
                                    "max_seconds": config.max_seconds},
                         "allowed_tools": list(condition.allowed_tools)})
+            row.update({"enable_image_memory": config.enable_image_memory,
+                        "enable_replanning": config.enable_replanning})
             rows.append(row)
     root.mkdir(parents=True, exist_ok=True)
     (root / "results.json").write_text(json.dumps(rows, indent=2, ensure_ascii=False) + "\n",
