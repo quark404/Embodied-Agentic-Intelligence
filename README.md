@@ -4,7 +4,7 @@
 
 以**同一个通用开源 VLM（优先 Qwen 系列）**为起点，在同一批具身任务、相同底层动作原语和预算下，依次加入工具调用、子任务规划和任务级图像记忆。我们要测清楚模型原本能完成什么、每个 Agentic 组件实际带来多少提升，以及哪些失败仍然无法解决。这里的任务级检索是在子任务开始时保存初始图像，之后需要回顾该子任务时按任务 ID 取回；它不是向量 RAG。所有成功率由 benchmark 原生判定，相关结论须通过真实模型与仿真实验验证。
 
-近期公开结果已经显示 Qwen 系列在 PyRUA-Lean 的 LIBERO-PRO 等任务上存在**非零成功率**，因此先从该路径做 Qwen 先导实验，再进行 A/B/C/D 消融。RoboICL 论文提供 RoboDojo 的协议与动作接口，但其发布的模型是 GPT-6 Astra；目前不能把它的分数当作 Qwen 成绩。具体数字、适用条件和选 benchmark 的依据见[近期 benchmark 调研](research/benchmarks/README.md)。
+**当前主评测目标为 RoboDojo-Sim。** Qwen3-VL 骨干的训练型 VLA 已在 RoboDojo 单任务获得非零结果；公开的通用 Qwen Agent + RPent + OpenWAM 仅找到一个完整但失败的 episode，尚不能视为成功率基线。我们先复现原生评测链路和简单任务的 Qwen 存活性，再进行 A/B/C/D 消融。不同模型角色、证据强度和主要参考见 [RoboDojo 专项调研](research/benchmarks/robodojo_qwen.md)，其他 benchmark 见[早期横向调研](research/benchmarks/README.md)。
 
 **项目任务规划（中文）：[我们要研究什么、如何实验、希望证明什么](docs/任务规划.md)。**
 

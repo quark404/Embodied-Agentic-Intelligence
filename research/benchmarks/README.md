@@ -1,12 +1,14 @@
 # 近期 Qwen 具身评测证据与首轮 benchmark 选择
 
+**2026-10-28 更新：用户已确定 RoboDojo-Sim 为主评测。** 本文件保留早期跨 benchmark 调研及 LIBERO-PRO 的 Qwen 数据；RoboDojo 上更精确的证据与优先级见[专项调研](robodojo_qwen.md)。此前“未找到 RoboDojo 的 Qwen 分数”范围过宽：XPolicyLab 的 StarVLA 发布了**Qwen3-VL 骨干、训练过动作头的 VLA**在 RoboDojo `build_tower` 上的非零结果；但仍未找到可作为通用 Qwen VLM Agent 成功率基线的全任务公开成绩。
+
 资料核查：2026-10-28。这里记录**公开来源报告的成绩**，不是本项目复现结果。沿 [RoboICL 论文页面与代码](https://github.com/Mosi-AI/RoboICL) 的 RoboDojo 路线，核查其模型与协议；再查 [PyRUA-Lean 2026-10 技术报告配套代码](https://github.com/DAGroup-PKU/PyRUA-Lean) 中同类 Agent 框架是否已有 Qwen 分数。论文 PDF 本次无法从 arXiv 访问，RoboICL 的具体协议和数字只采用已核对的发布仓库材料；没有把未读的论文正文当作证据。两仓库在本次核查的 HEAD 分别为 `17b379a6deea33f71bd31e05bd60d1daf627acfb`、`fdf6e870654254e2c0c891ee407313fa48bdd0f9`。上游更新后应重查。
 
 ## 关键判断
 
 **Qwen 在机器人 Agent 框架下并非普遍 0 分。** PyRUA-Lean 2026-10-13 的技术报告和 2026-10-15 发布的模型，在相同 PyRUA-Lean 框架内报告了 Qwen3.5-4B、Qwen3.5-27B 与基于 Qwen3.5-4B 训练的 Coder 成绩。LIBERO-PRO 未见任务上的原始 Qwen3.5-4B 为 **13.5%**，Qwen3.5-27B 为 **38.1%**。这足以把 LIBERO-PRO 作为首轮验证入口，却**不能证明**本项目的 prompt、模型服务、动作转换和 harness 能复现同一分数，也不能证明裸 VLM 直接输出底层动作就能成功。
 
-RoboICL 2026-09-29 论文是较新的 RoboDojo 多轮交互/示范记忆路线，但发布的 runner 接的是 **GPT-6 Astra**，不是 Qwen。其成功例和公开回放不能充作“Qwen 在 RoboDojo 非零”的证据。RoboDojo 仍有价值：它提供长程与记忆任务，也有可用的原生评测器；但应在 Qwen 先导测试通过后再作为主实验。
+RoboICL 2026-09-29 论文是较新的 RoboDojo 多轮交互/示范记忆路线，但发布的 runner 接的是 **GPT-6 Astra**，不是 Qwen。其成功例和公开回放不能充作“通用 Qwen Agent 在 RoboDojo 非零”的证据。RoboDojo 现在是本项目指定主评测；先做 Qwen 存活性测试，再判断哪些任务适合完整消融。
 
 ## 可核查的公开数字
 
@@ -27,15 +29,15 @@ PyRUA-Lean 的 GPT-6 Astra 表还报告 LIBERO-PRO 工具调用 **83.0%**、代�
 - [RoboICL 论文（arXiv:2609.34261）](https://arxiv.org/abs/2609.34261) 与 [发布仓库](https://github.com/Mosi-AI/RoboICL/tree/17b379a6deea33f71bd31e05bd60d1daf627acfb) 描述冻结通用多模态模型、示范轨迹和当前 rollout 的交互记忆；发布 runner 的模型为 GPT-6 Astra。
 - [零样本协议](https://github.com/Mosi-AI/RoboICL/blob/17b379a6deea33f71bd31e05bd60d1daf627acfb/configs/protocols/zero_shot_b25.json) 为 0 示范、25 个 LIVE 记忆块；[单样本协议](https://github.com/Mosi-AI/RoboICL/blob/17b379a6deea33f71bd31e05bd60d1daf627acfb/configs/protocols/one_shot_j12_b12.json) 为 1 示范、12 TRAIN 块和 12 LIVE 块。论文评测覆盖 8 个 Open 零样本任务和 22 个非 Open 单样本任务，见[仓库 Data preparation](https://github.com/Mosi-AI/RoboICL/blob/17b379a6deea33f71bd31e05bd60d1daf627acfb/README.md#one-shot-references)。
 - RoboICL 的动作是双臂 `[T,14]` 动作块，需要匹配的转换、安全守卫和原生成功判定。我们的子任务**初始图像回忆**与 RoboICL 的 LIVE 轨迹记忆不是同一种机制；比较时须分别开关，保留示范数量、相机、动作 horizon、预算和评分协议。
-- 本次在 RoboICL 发布配置中**没有找到可核查的 Qwen RoboDojo 成功率**。这是“证据尚缺”，不是断言 Qwen 得分为 0。若后续发现同协议公开结果，应补充精确版本、任务数、seed、动作接口和来源。
+- RoboICL 发布配置中没有 Qwen RoboDojo 成功率。**其他框架有 Qwen 骨干训练型 VLA 的 RoboDojo 分数，也有通用 Qwen Agent 的单 episode 失败记录**；它们的角色和条件不能混同，详见[专项调研](robodojo_qwen.md)。
 
 ## benchmark 排序与决策
 
 | 顺序 | benchmark | 现有 Qwen 非零依据 | 本项目下一步 |
 | --- | --- | --- | --- |
-| 1 | **LIBERO-PRO** | 有：基座 Qwen3.5-4B/27B 在 PyRUA-Lean 原语路径的公开分数 | 首先复现少量未见任务与原生判定；冻结模型、原语、任务、seed，然后做 harness 消融 |
-| 2 | **RoboTwin 2.0 / RoboCasa365** | 有：同一报告给出 Qwen 基座分数 | 用于未见平台与长程任务外推；当前仓库还缺各自的启动适配 |
-| 3 | **RoboDojo-Sim** | 本次未找到同协议 Qwen 分数；RoboICL/PyRUA 公开成绩使用 GPT-6 Astra | 先接 Qwen 做存活性测试；再研究记忆与双臂长任务，避免直接承诺完整 A/B/C/D |
+| 1 | **RoboDojo-Sim（用户指定主评测）** | 训练型 Qwen 骨干 VLA 有单任务非零分数；通用 Qwen Agent 的成功率仍缺 | 先接 Qwen 做存活性测试，再研究记忆与双臂长任务 |
+| 2 | **LIBERO-PRO（参照/备用）** | 有：基座 Qwen3.5-4B/27B 在 PyRUA-Lean 原语路径的公开分数 | 用于诊断 Qwen/RoboDojo 接口问题或跨平台复核 |
+| 3 | **RoboTwin 2.0 / RoboCasa365（扩展）** | 有：同一报告给出 Qwen 基座分数 | 用于未见平台与长程任务外推；当前仓库还缺各自的启动适配 |
 
 优先使用 Qwen3.5-4B 基座与 Qwen3.5-27B 基座作开源参照；PyRUA-Lean Coder v0.1-4B 单列为经过训练的模型参照。可选新 checkpoint 必须先完成同一小样本先导测试，不能依据模型名称推断机器人成功率。
 
