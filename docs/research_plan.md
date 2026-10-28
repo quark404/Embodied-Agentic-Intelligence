@@ -1,32 +1,34 @@
-# Research plan and benchmark selection
+# RoboDojo mixed-agent research protocol
 
-## Questions and controlled comparisons
+The primary question is **which gaps between an open Qwen agent and a frontier closed model remain in embodied manipulation, and which can be narrowed by calling GPT-6 Astra only as a bounded planning or diagnosis tool?** In hybrid arms, Qwen makes every robot action decision. A full Astra agent is a small, separately labeled reference arm for the same-interface model gap. Published RoboICL/PyRUA/HexaShell scores are contextual evidence, not paired results for this project.
 
-1. **Capability boundary:** Compare a direct action VLM, the same model with bounded tool calls, and code-as-policy execution using identical observations, robot primitives, task seeds and wall-clock/action budgets. Report task success, partial progress, intervention count, action errors, tool calls, latency and token/GPU cost. Keep safety limits enforced by the environment.
-2. **Memory contribution:** Compare no memory, recent-history only, and explicit subtask-image recall. Capture the initial image when each subtask begins; later recall that image by subtask ID within the same task and episode. Freeze the base model and planner prompt. Test missing, stale, and wrong-task images and whether feedback leads to correction. No vector retrieval is planned.
-3. **Planning contribution:** Ablate explicit subgoals, tool inventory and memory independently; use the same model and feedback. Report recovery after injected failures, not only final success.
+See [the Chinese task plan](任务规划.md), [the detailed experimental design](../research/benchmarks/mixed_agent_robodojo.md), and [the RoboDojo/Qwen source audit](../research/benchmarks/robodojo_qwen.md).
 
-## Benchmark order
+## Conditions and contrasts
 
-| Stage | Benchmark | Why | Constraint |
-| --- | --- | --- | --- |
-| 1 | RoboDojo-Sim | The project's primary benchmark: official five-dimension evaluation, bimanual control, and explicit Memory/Long-Horizon tasks. See the [Qwen-specific evidence audit](../research/benchmarks/robodojo_qwen.md). | Isaac Sim 5.1 compatible GPU/Vulkan stack, XPolicyLab and benchmark assets; first establish that a Qwen agent can execute valid actions and obtain a native verdict. |
-| 2 | LIBERO / LIBERO-PRO | Qwen base models have nonzero results in PyRUA-Lean on this benchmark, making it a useful diagnostic and cross-platform comparison. | RPent/robot stack, assets, GPU; do not treat LIBERO scores as RoboDojo scores. |
-| 3 | RoboTwin 2.0 | Dual-arm and scene variation to test transfer of plans/skills. PyRUA-Lean adapter exists. | RPent and LingBot-VLA stack; greater compute. |
-| 4 | RoboCasa365 | Mobile manipulation and composite tasks for long-horizon state tracking and memory. PyRUA-Lean adapter exists. | RPent, navigation/VLA stack; use after simpler controls are validated. |
+| Arm | Planner | Robot actor | Bounded Astra advice | Subtask-start images |
+| --- | --- | --- | --- | --- |
+| q_only | Qwen | Qwen | none | off |
+| astra_reference | Astra | Astra | full-agent reference, not a hybrid | off |
+| hybrid_plan | Astra first plan; Qwen later replans | Qwen | one planning call | off |
+| hybrid_diagnose | Qwen | Qwen | automatic on rejected action, or Qwen-requested consult after a prior action | off |
+| hybrid_both | Astra | Qwen | planning and diagnosis | off |
+| hybrid_both_memory | Astra | Qwen | same budgets as hybrid_both | on |
 
-**Recommended first real experiment:** Connect the harness to RoboDojo's native XPolicyLab evaluation path; perform a small, fixed Qwen-agent survival pilot on simple Open tasks before testing memory on `cover_blocks` and planning on Long-Horizon tasks. A Qwen-backed trained VLA has published nonzero RoboDojo results, but no general Qwen VLM agent success-rate sweep has been verified here. Report paired task/seed outcomes only after a functioning model/action baseline is established; do not compare published aggregate numbers from different protocols as if they were controlled experiments.
+Primary contrasts are q_only→hybrid_plan (planning), q_only→hybrid_diagnose (failure diagnosis), hybrid_plan→hybrid_both (additional diagnosis), hybrid_both→hybrid_both_memory (task-image memory), and q_only↔astra_reference (limited full-agent reference gap). Fix Qwen checkpoint, three RGB cameras, proprioception, robot primitives, action conversion/safety guards, demonstration regime, native task/seed/layout list, physical-step budget and task scoring. The primary protocol allows at most **one Astra plan and one Astra diagnosis per episode, two closed calls total**; Qwen handles any later replan. A rejected-action receipt can automatically trigger diagnosis; after any prior robot action Qwen can explicitly issue a consult even if the receipt says execution succeeded but observed task progress appears stalled. Consult without a prior action is rejected. Validate the structured response and prevent advisory outputs from containing robot actions or success verdicts. Track separate closed-tool tokens, latency and cost; compare matched physical budget first and report compute tradeoffs alongside success.
 
-## Integration path
+## Native RoboDojo path
 
-- Implement an XPolicyLab policy server bridge for RoboDojo's official environment client. Map benchmark observations and native success verdicts without exposing privileged state to the policy. Preserve native run artifacts and task IDs; the current `RoboICLAdapter` handles an initialized environment but is not itself a complete official evaluation entry.
-- Connect `HarnessChatPlanner` and `HarnessChatPolicy` to a locally served Qwen VLM; their request/response contracts have synthetic tests, but a live endpoint has not been validated. Pin exact checkpoint, tokenizer, prompt, quantization and endpoint version. Keep closed models, if used, as a separately labeled tool/oracle arm, never the sole main baseline.
-- Use `AgenticHarness` to run the plan/act/observe loop and `SubtaskImageMemory` to keep the first image of each subtask with task ID, episode ID, subtask ID and provenance. A later explicit recall tool call returns the original image labeled as a subtask-start view, never as the current observation. Log capture and recall events, missing IDs, and the effect of stale images. Isolate episodes; cross-episode experience retrieval is not implemented in this version.
-- The harness already limits decisions, tool calls, recalls, replans and elapsed time. Before claiming model gains, add matched experiment conditions, deterministic seed/split manifests, token and GPU accounting, and native benchmark results. The present image memory is episode-local; any future cross-episode bank must use train-only sources and avoid demonstration/test overlap.
+RoboDojo's Isaac Sim/IsaacLab client owns action execution, termination and scoring; XPolicyLab owns the policy-server contract. Pin their revisions and assets, then run installation doctor, camera preflight, action-contract tests and one native episode before any sweep. **RoboICL-style ee_delta with the native IK-continuity guard requires Mosi-AI's pinned RoboDojo fork `00ef04cd245bfa76e6f1e0bd8383c82f7964f942`; official main `f57e1633ffed59761bc8e568cfe7530c4b33381c` lacks `src.eval_client.ik_continuity`. Joint-action mode can use official main.** Every compared arm must use the same fork and action mode. Start with simple Open tasks such as general_pickup. Build_tower probes Precision, fill_pen_holder Long-Horizon, and cover_blocks Memory. Imitate_sorting_sequence is a boundary case for start-image memory because the critical demonstration unfolds during the episode. A 20–50 episode pilot is an integration check; claims about stable performance need frozen splits and native per-task episode counts.
 
-## Source framework notes
+The image bank captures raw camera bytes once at subtask entry and permits explicit same-task/same-episode recall by subtask ID. No vector index or future/cross-episode lookup exists. RoboICL's LIVE trajectory memory and one-shot demonstration context are separate variables: either disable them across arms or hold them identical. RoboDojo has no general native subtask-done predicate; a policy-requested advance is only **unverified plan progression** and must never count as task success. If a trained VLA executes low-level control, use the same checkpoint across compared arms and label the result planner-over-VLA rather than pure VLM control.
 
-- [PyRUA-Lean](https://github.com/DAGroup-PKU/PyRUA-Lean): robot primitives, Python cells, OpenAI-compatible runtime; reports LIBERO-PRO, RoboTwin 2.0, RoboCasa365 and RoboDojo support. Its published model comparisons use particular planners and robot stacks, so they are not interchangeable with new Qwen results.
-- [RoboICL](https://github.com/Mosi-AI/RoboICL): RoboDojo interaction and demonstration memory, 8 zero-shot Open and 22 one-shot non-Open tasks in its documented setting. Its runner requires separate policy/simulator environments and Isaac Sim assets.
+## Acceptance before GPU evaluation
 
-The repository's simulator-independent harness can validate control flow and image-memory bookkeeping with synthetic environments. Real benchmark scores require installing those upstream stacks and running their native evaluators.
+- Tests verify q_only cannot request Astra; plan-only cannot request diagnosis; closed responses cannot send robot commands or claim native success; per-episode calls and time budgets are enforced.
+- A rejected action can trigger diagnosis automatically; explicit consult needs a prior action, works after an ok=true receipt, and respects the same diagnosis cap. An unsuccessful tool receipt cannot mark the episode successful.
+- Memory tests verify immutable subtask-start bytes, historical labels, episode isolation, recall on request and no raw image bytes in traces.
+- Adapter contracts verify fresh three-camera observations, correct 14-D action ordering and conversion, guarded execution, and native terminal/score extraction. Fake-environment checks are not real RoboDojo validation.
+- Every real episode records task/seed/layout, model and provider IDs, tool schema/prompt revisions, physical steps, native verdict, each Astra invocation reason, model tokens, elapsed time and cost. A missing native verdict is unknown, not silently recorded as a model failure.
+
+No RoboDojo GPU simulator or live Qwen/Astra endpoint has been validated in this workspace. Source tests alone cannot establish the performance gap. Upstream integration caveats remain in [the adapter guide](上游框架集成.md).

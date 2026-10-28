@@ -21,7 +21,7 @@ class Subtask:
 
 @dataclass(frozen=True)
 class Decision:
-    kind: str  # tool | recall | replan
+    kind: str  # tool | recall | replan | advance | consult
     tool: str = ""
     args: dict = field(default_factory=dict)
     recall_subtask_id: str = ""
@@ -35,6 +35,10 @@ class StepResult:
     subtask_done: bool = False
     task_done: bool = False
     episode_end: bool = False
+
+
+class AgentDecisionError(ValueError):
+    """A policy decision violates the frozen agent action protocol."""
 
 
 @dataclass(frozen=True)
@@ -66,6 +70,7 @@ class AgentContext:
     history: tuple[dict, ...]
     recalled_images: tuple[RecalledImage, ...]
     completed_subtasks: tuple[str, ...]
+    remaining_subtasks: tuple[Subtask, ...] = ()
 
 
 class HarnessEnvironment(Protocol):
@@ -107,7 +112,7 @@ class AgenticHarness:
                 any(not isinstance(s, Subtask) or not s.id or not s.instruction for s in plan) or
                 len({s.id for s in plan}) != len(plan) or
                 any(s.id in completed for s in plan)):
-            raise ValueError("Planner returned an invalid remaining-subtask list")
+            raise AgentDecisionError("Planner returned an invalid remaining-subtask list")
         return plan
 
     def run(self, task: dict) -> dict:
@@ -128,6 +133,14 @@ class AgenticHarness:
         index = 0
         active_subtask_id = None
 
+        def drain_agent(source):
+            drain = getattr(source, "drain_events", None)
+            if drain is not None:
+                for agent_event in drain():
+                    if not isinstance(agent_event, dict) or "event" not in agent_event:
+                        raise ValueError("Agent event must be a dictionary with event")
+                    emit(agent_event)
+
         def emit(event: dict):
             # Raw images are persisted only in SubtaskImageMemory, never in trace JSON.
             event = {"task_id": task["task_id"], "episode_id": task["episode_id"], **event}
@@ -144,7 +157,10 @@ class AgenticHarness:
                 raise ValueError("Episode ID already has image memory; use a fresh episode ID")
             observation = self.environment.reset(task)
             self._images(observation)
-            plan = self._plan(task, observation, (), None)
+            try:
+                plan = self._plan(task, observation, (), None)
+            finally:
+                drain_agent(self.planner)
             emit({"event": "plan", "subtasks": [asdict(s) for s in plan]})
             while True:
                 if time.monotonic() - start >= self.config.max_seconds:
@@ -170,17 +186,21 @@ class AgenticHarness:
                                       "filename": r.filename} for r in snapshots]})
                     recalled = ()
                 context = AgentContext(deepcopy(task), subtask, deepcopy(observation),
-                                       tuple(deepcopy(events)), recalled, tuple(completed))
-                decision = self.policy.decide(context)
+                                       tuple(deepcopy(events)), recalled, tuple(completed),
+                                       tuple(plan[index:]))
+                try:
+                    decision = self.policy.decide(context)
+                finally:
+                    drain_agent(self.policy)
                 decisions += 1
                 if time.monotonic() - start >= self.config.max_seconds:
                     status = "time_budget_exhausted"
                     break
                 if not isinstance(decision, Decision):
-                    raise ValueError("Policy must return a Decision")
+                    raise AgentDecisionError("Policy must return a Decision")
                 if decision.kind == "recall":
                     if not self.config.enable_image_memory:
-                        raise ValueError("Image recall is disabled for this condition")
+                        raise AgentDecisionError("Image recall is disabled for this condition")
                     if recall_calls >= self.config.max_recall_calls:
                         status = "recall_budget_exhausted"
                         break
@@ -195,28 +215,55 @@ class AgenticHarness:
                           "images": [{"subtask_id": r.record.subtask_id,
                                       "camera": r.record.camera, "sha256": r.record.sha256}
                                      for r in recalled]})
+                elif decision.kind == "consult":
+                    consult = getattr(self.policy, "consult", None)
+                    if consult is None or not any(e.get("event") == "tool" for e in events):
+                        raise AgentDecisionError("Consultation requires an enabled advisor and prior action")
+                    try:
+                        advice = consult(context)
+                    finally:
+                        drain_agent(self.policy)
+                    emit({"event": "consult", "kind": "diagnosis", "advice": advice,
+                          "available": advice is not None})
                 elif decision.kind == "replan":
                     if not self.config.enable_replanning:
-                        raise ValueError("Replanning is disabled for this condition")
+                        raise AgentDecisionError("Replanning is disabled for this condition")
                     if replans >= self.config.max_replans:
                         status = "replan_budget_exhausted"
                         break
                     failure = next((e["receipt"] for e in reversed(events)
                                     if e.get("event") == "tool" and not e["receipt"].get("ok")), None)
-                    plan = self._plan(task, observation, tuple(completed), failure)
+                    try:
+                        plan = self._plan(task, observation, tuple(completed), failure)
+                    finally:
+                        drain_agent(self.planner)
                     index = 0
                     active_subtask_id = None
                     replans += 1
                     recalled = ()
                     emit({"event": "replan", "subtasks": [asdict(s) for s in plan],
                           "failure": failure})
+                elif decision.kind == "advance":
+                    if index == len(plan) - 1:
+                        raise AgentDecisionError("Cannot advance beyond the final planned subtask")
+                    if not any(e.get("event") == "tool" and e.get("subtask_id") == subtask.id
+                               and e.get("receipt", {}).get("ok") is True for e in events):
+                        raise AgentDecisionError("Advance requires a successful action receipt in this subtask")
+                    emit({"event": "subtask_advance", "from_subtask_id": subtask.id,
+                          "to_subtask_id": plan[index + 1].id,
+                          "verification": "policy_unverified"})
+                    index += 1
+                    recalled = ()
                 elif decision.kind == "tool":
                     if decision.tool not in self.config.allowed_tools or not isinstance(decision.args, dict):
-                        raise ValueError("Policy requested a tool outside the allowlist or invalid arguments")
+                        raise AgentDecisionError("Policy requested a tool outside the allowlist or invalid arguments")
                     if tool_calls >= self.config.max_tool_calls:
                         status = "tool_budget_exhausted"
                         break
-                    json.dumps(decision.args)
+                    try:
+                        json.dumps(decision.args, allow_nan=False)
+                    except (TypeError, ValueError) as exc:
+                        raise AgentDecisionError(f"Tool arguments are not strict JSON: {exc}") from exc
                     result = self.environment.execute(decision.tool, decision.args)
                     if (not isinstance(result, StepResult) or not isinstance(result.receipt, dict)
                             or not isinstance(result.receipt.get("ok"), bool)
@@ -224,7 +271,7 @@ class AgenticHarness:
                         raise ValueError("Environment returned an invalid StepResult")
                     if result.subtask_done and not result.receipt["ok"]:
                         raise ValueError("Environment returned contradictory completion flags")
-                    json.dumps(result.receipt)
+                    json.dumps(result.receipt, allow_nan=False)
                     tool_calls += 1
                     observation = result.observation
                     self._images(observation)
@@ -251,7 +298,7 @@ class AgenticHarness:
                             break
                         index += 1
                 else:
-                    raise ValueError(f"Unknown decision kind: {decision.kind}")
+                    raise AgentDecisionError(f"Unknown decision kind: {decision.kind}")
         except Exception as exc:
             status = "error"
             error = f"{type(exc).__name__}: {exc}"
@@ -269,4 +316,24 @@ class AgenticHarness:
                    "tool_calls": tool_calls, "recall_calls": recall_calls,
                    "replans": replans, "elapsed_seconds": round(time.monotonic() - start, 3),
                    "error": error, "cleanup_error": cleanup_error, "events": events}
+        tool_events = [event for event in events if event.get("event") == "tool"]
+        summary["rejected_actions"] = sum(event["receipt"]["ok"] is False
+                                          for event in tool_events)
+        summary["executed_physical_steps"] = sum(
+            event["receipt"].get("executed_steps", 0) or 0 for event in tool_events)
+        call_summary = {}
+        for event in events:
+            if event.get("event") not in ("model_call", "advisor_call"):
+                continue
+            key = f"{event.get('model', 'unknown')}:{event.get('role', event.get('kind', 'unknown'))}"
+            slot = call_summary.setdefault(key, {"calls": 0, "errors": 0,
+                "input_tokens": 0, "output_tokens": 0, "latency_seconds": 0.0})
+            slot["calls"] += 1
+            slot["errors"] += event.get("ok") is False
+            usage = event.get("usage") or {}
+            if isinstance(usage, dict):
+                slot["input_tokens"] += usage.get("input_tokens", usage.get("prompt_tokens", 0)) or 0
+                slot["output_tokens"] += usage.get("output_tokens", usage.get("completion_tokens", 0)) or 0
+            slot["latency_seconds"] += event.get("latency_seconds", 0)
+        summary["model_calls"] = call_summary
         return summary

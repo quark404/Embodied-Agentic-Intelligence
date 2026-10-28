@@ -28,9 +28,9 @@
 | [HexaShell: A Thin Harness for Exploring the Limits of VLM Agents as Robot Coding Agents](https://arxiv.org/abs/2610.23479)；[仓库内论文 PDF 与代码](https://github.com/HexaFuture/HexaShell/tree/d1a2a24dc4c528a652b359fd689398530ef941d8) | Codex + GPT-6 Astra；官方 42 任务 46.9% 成功 | **主要工具 harness 参考**：薄命令行、可复用工具、失败后改工具；论文 PDF 已核读 | 无：公开实验使用 GPT-6 Astra |
 | [PyRUA-Lean: Python for Lean Robot-Use Agents](https://arxiv.org/abs/2610.01939)；[RoboDojo 接口](https://github.com/DAGroup-PKU/PyRUA-Lean/blob/fdf6e870654254e2c0c891ee407313fa48bdd0f9/docs/robots/robodojo.md) | RoboDojo 公开分数使用 GPT-6 Astra（官方 50.35% 平均成功率） | **主要代码/原语参考**：机器人 Python cells、原语回执、XPolicyLab 接口 | 其 Qwen3.5 基座分数在 LIBERO-PRO/RoboTwin/RoboCasa，不能移植成 RoboDojo 分数 |
 | [StarVLA: A Versatile Vision-Language-Action Model](https://arxiv.org/abs/2604.05014)；[XPolicyLab RoboDojo 适配及结果](https://github.com/XPolicyLab/XPolicyLab/blob/c43a74653bec480ebe82c84770664e8035bc56c9/policy/StarVLA/README.md) | Qwen3-VL-4B-Instruct 骨干 + 在机器人数据上训练的 OFT/GR00T/PI_v3 动作头 | **非零控制参照**：验证 Qwen 系骨干 + 正确动作接口能完成任务；可作为单独的低层执行臂 | 有，仅 `build_tower` 任务的发布成绩；不是通用 Qwen Agent |
-| [XPolicyLab 的 GPT-6 Astra Direct EEF / RoboProbe](https://github.com/XPolicyLab/XPolicyLab/blob/c43a74653bec480ebe82c84770664e8035bc56c9/policy/GPT_6_Astra_Direct_EEF/README.md)；[论文](https://arxiv.org/abs/2609.24170) | GPT-6 Astra，RGB + `move_eef` | 直接操作的动作接口参照，便于设计同原语 Qwen A 组 | 无 |
+| [XPolicyLab 的 GPT-6 Astra Direct EEF / RoboProbe](https://github.com/XPolicyLab/XPolicyLab/blob/c43a74653bec480ebe82c84770664e8035bc56c9/policy/GPT_6_Astra_Direct_EEF/README.md)；[论文](https://arxiv.org/abs/2609.24170) | GPT-6 Astra，RGB + `move_eef` | 直接操作的动作接口参照；本项目完整 Astra 参考组仍须用与 Qwen 相同的原语 | 无 |
 
-HexaShell 论文第 4 节以同一 GPT-6 Astra 的无工具基线约 22.5% 对比其工具 harness 的 46.9%；这是**工具机制与能力边界的研究范式**，不能当作 Qwen 的提升量。RoboICL 的记忆是动作/回执/观察的交互轨迹；我们 D 组是子任务开始时的原始图像，作用和信息量不同，必须单独消融。
+HexaShell 论文第 4 节以同一 GPT-6 Astra 的无工具基线约 22.5% 对比其工具 harness 的 46.9%；这是**工具机制与能力边界的研究范式**，不能当作 Qwen 的提升量。RoboICL 的记忆是动作/回执/观察的交互轨迹；本项目 `hybrid_both_memory` 只回忆子任务开始时的原始图像，作用和信息量不同，必须单独消融。
 
 ## 已实际用 Qwen 接入 RoboDojo 的公开项目
 
@@ -44,9 +44,9 @@ HexaShell 论文第 4 节以同一 GPT-6 Astra 的无工具基线约 22.5% 对�
 
 ## 我们的 RoboDojo 首轮设计
 
-1. **先打通官方原生入口。** 固定 RoboDojo/XPolicyLab 提交、资产 revision、Isaac 环境、三个 RGB 相机、14 维状态/动作顺序、动作 horizon 与原生评分；先执行 `doctor` 和单任务 `eval`，保存 `result.json`/原生 trace。本仓库现有 `RoboICLAdapter` 只接已初始化环境，没有组成官方 XPolicyLab policy server；这项接线仍待 GPU 环境。
-2. **先验证 Qwen Agent，而非先测记忆。** 用 `general_pickup` 之类的 Open 类简单任务检查有效动作、是否能抓到目标、是否出现至少一个原生成功；把 `build_tower` 保留为训练型 StarVLA 的控制参照，不让不同动作头成绩和 Agent 成绩直接比较。最初 20–50 个固定任务/seed episode 只作工程试跑；0/20 仍不足以证明真实成功率恒为零。
-3. **再测规划与记忆。** 同一 Qwen、同一底层原语与执行预算下配对 A/B/C/D。记忆优先选择 `cover_blocks`：初始可见的三色方块后来被杯子遮住，任务要求按颜色顺序揭开，因此子任务初始图像有明确可检验用途。`imitate_sorting_sequence` 的关键顺序来自**运行中**的对方机器人示范，单张子任务初始图像可能不含答案，应列为记忆机制的边界案例。`fill_pen_holder` 等 Long-Horizon 任务用于看规划和纠错，但它在现有 Qwen3.5-2B/RPent 单例中失败，不能预设可成功。
-4. **归因门槛。** 若 Qwen Agent 所有简单任务都没有有效动作或原生成功，先修动作转换、提示词/输出格式、相机顺序与控制原语，必要时采用有成绩的训练型 VLA 作**同一执行工具**，由 Qwen 负责上层规划。该条件须明示为“Qwen planner + VLA executor”，不能声称 Qwen 独立具身操作成功。只在可运行的固定基线上评估新增规划/记忆的增量。
+1. **原生入口验证。** 本仓库现有 `integrations/xpolicylab/Embodied_Agentic` 与 `robodojo_native.py` 已实现 XPolicyLab policy 和原生 eval client 桥接，但尚未在 GPU/Isaac 环境运行。固定 RoboDojo/XPolicyLab 提交、资产 revision、三个 RGB 相机、动作模式/安全守卫与原生评分，先执行 `doctor` 和单任务 `eval`，保存原生 `_result.json` 及 harness trace。
+2. **Qwen 存活性。** 用 `general_pickup` 等简单 Open 任务检查有效动作、是否能抓到目标、是否出现原生成功。`build_tower` 的训练型 StarVLA 数据仅作环境参照。最初 20–50 个固定任务/seed episode 只作工程试跑；0/20 不足以证明真实成功率恒为零。
+3. **同接口配对比较。** 按 [混合 Agent 协议](mixed_agent_robodojo.md)比较 `q_only`、小样本 `astra_reference` 与受限规划/诊断混合组；`cover_blocks` 检验起始图像记忆，`imitate_sorting_sequence` 检验它对运行中演示的边界，`fill_pen_holder` 检查长程规划与纠错。不能预设 Qwen 或混合组在这些任务成功。
+4. **归因门槛。** 若 Qwen Agent 在简单任务仍无有效动作或原生成功，先查动作转换、输出格式、相机和控制原语。必要时让所有比较组共用同一训练型 VLA 作低层执行器，并明确标注该条件属于上层 Agent 比较，不能宣称 Qwen 独立完成低层操作。
 
 论文正文可直接核读的是 HexaShell 仓库随附 PDF。RoboDojo、XPolicyLab、RoboICL、PyRUA-Lean、StarVLA 的论文条目和 arXiv 链接已核对，但本次 arXiv PDF 站点不可访问；有关它们的具体协议和数字均引用对应发布仓库/结果表，未将未读取的论文正文当作独立证据。若日后取得 PDF，应补录论文版本、表号和与代码发布结果的差异。

@@ -21,6 +21,7 @@ class Condition:
     environment_factory: Callable[[], HarnessEnvironment] | None = None
     enable_image_memory: bool = True
     enable_replanning: bool = True
+    agent_factory: Callable[[], tuple[Planner, AgentPolicy]] | None = None
 
 
 class GoalOnlyPlanner:
@@ -29,32 +30,6 @@ class GoalOnlyPlanner:
     def plan(self, task: dict, observation: dict, completed: tuple[str, ...],
              failure: dict | None) -> list[Subtask]:
         return [Subtask("whole_task", task.get("goal") or task["task_id"])]
-
-
-def make_ablation_conditions(*, direct_policy_factory: Callable[[], AgentPolicy],
-                             tool_policy_factory: Callable[[], AgentPolicy],
-                             planned_policy_factory: Callable[[], AgentPolicy],
-                             memory_policy_factory: Callable[[], AgentPolicy],
-                             planner_factory: Callable[[], Planner],
-                             direct_tools: tuple[str, ...],
-                             tool_tools: tuple[str, ...]) -> list[Condition]:
-    """Build A/B/C/D with B–D sharing the exact same robot tool allowlist.
-
-    The caller still must pin identical model weights, native tasks, observations,
-    action implementation, and budgets across comparable arms.
-    """
-    if not direct_tools or not tool_tools:
-        raise ValueError("Direct actions and robot tools must be specified")
-    return [
-        Condition("A_direct", GoalOnlyPlanner, direct_policy_factory, direct_tools,
-                  enable_image_memory=False, enable_replanning=False),
-        Condition("B_tools", GoalOnlyPlanner, tool_policy_factory, tool_tools,
-                  enable_image_memory=False, enable_replanning=False),
-        Condition("C_plan_tools", planner_factory, planned_policy_factory, tool_tools,
-                  enable_image_memory=False, enable_replanning=True),
-        Condition("D_plan_tools_memory", planner_factory, memory_policy_factory, tool_tools,
-                  enable_image_memory=True, enable_replanning=True),
-    ]
 
 
 def run_paired(*, tasks: list[dict], conditions: list[Condition],
@@ -92,8 +67,10 @@ def run_paired(*, tasks: list[dict], conditions: list[Condition],
             config = replace(base_config, allowed_tools=condition.allowed_tools,
                              enable_image_memory=condition.enable_image_memory,
                              enable_replanning=condition.enable_replanning)
+            planner, policy = (condition.agent_factory() if condition.agent_factory else
+                               (condition.planner_factory(), condition.policy_factory()))
             harness = AgenticHarness(environment=(condition.environment_factory or environment_factory)(),
-                planner=condition.planner_factory(), policy=condition.policy_factory(),
+                planner=planner, policy=policy,
                 memory=SubtaskImageMemory(episode_root / "memory"), config=config,
                 trace_path=episode_root / "trace.jsonl")
             result = harness.run({**task, "episode_id": episode_id})

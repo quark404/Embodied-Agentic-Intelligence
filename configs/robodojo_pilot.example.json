@@ -1,0 +1,7 @@
+{
+  "tasks": [
+    {"task_id": "general_pickup", "seed": 0, "eval_num": 5},
+    {"task_id": "cover_blocks", "seed": 0, "eval_num": 5},
+    {"task_id": "fill_pen_holder", "seed": 0, "eval_num": 5}
+  ]
+}
