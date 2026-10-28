@@ -2,7 +2,7 @@
 
 The primary question is **which gaps between an open Qwen agent and a frontier closed model remain in embodied manipulation, and which can be narrowed by calling GPT-6 Astra only as a bounded planning or diagnosis tool?** In hybrid arms, Qwen makes every robot action decision. A full Astra agent is a small, separately labeled reference arm for the same-interface model gap. Published RoboICL/PyRUA/HexaShell scores are contextual evidence, not paired results for this project.
 
-See [the Chinese task plan](任务规划.md), [the detailed experimental design](../research/benchmarks/mixed_agent_robodojo.md), and [the RoboDojo/Qwen source audit](../research/benchmarks/robodojo_qwen.md).
+See [the Chinese task plan](任务规划.md), [the detailed experimental design](../research/benchmarks/mixed_agent_robodojo.md), [the subsequent Qwen Agentic RL roadmap](../research/benchmarks/agentic_rl_roadmap.md), and [the RoboDojo/Qwen source audit](../research/benchmarks/robodojo_qwen.md).
 
 ## Conditions and contrasts
 
@@ -32,3 +32,7 @@ The image bank captures raw camera bytes once at subtask entry and permits expli
 - Every real episode records task/seed/layout, model and provider IDs, tool schema/prompt revisions, physical steps, native verdict, each Astra invocation reason, model tokens, elapsed time and cost. A missing native verdict is unknown, not silently recorded as a model failure.
 
 No RoboDojo GPU simulator or live Qwen/Astra endpoint has been validated in this workspace. Source tests alone cannot establish the performance gap. Upstream integration caveats remain in [the adapter guide](上游框架集成.md).
+
+## Subsequent learning phase
+
+Keep these six untrained conditions frozen. Export only independently assigned training tasks/layouts to build labeled public-observation trajectories, then compare Qwen SFT, verifiable local training for tool/receipt/memory decisions, and a learned limited-advice routing policy under new checkpoint names. Evaluate the same routing-trained checkpoint both with and without Astra; the no-Astra run tests whether any gain resides in Qwen itself. Offline proxy scores cannot establish robot success. Final claims require held-out RoboDojo closed-loop episodes, native verdicts, and a full data/teacher/training/evaluation cost ledger. The paper triage in the [roadmap](../research/benchmarks/agentic_rl_roadmap.md) is based on user-provided material and has not been rechecked against the papers in this update.

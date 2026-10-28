@@ -8,6 +8,8 @@
 
 通俗的[中文任务规划](docs/任务规划.md)说明要证明什么；[详细实验协议](research/benchmarks/mixed_agent_robodojo.md)列出任务、归因边界和指标；[RoboDojo/Qwen 公开证据](research/benchmarks/robodojo_qwen.md)区分训练型 Qwen VLA 的成绩与尚未确立的通用 Qwen Agent 成绩。公开论文的分数不是本项目跑出的结果。
 
+后续研究将探索 **Qwen 具身 Agentic RL**：用未训练对照的失败轨迹定位值得学的能力，先做示范学习与有标准答案的局部训练，再训练“何时请求 Astra”，最后在独立 RoboDojo 闭环任务中测试**撤除 Astra 后是否仍有提升**。[第二阶段路线与论文借鉴](research/benchmarks/agentic_rl_roadmap.md)已单独规划；当前六组和代码仍是未训练基线，尚无训练后成绩。该路线不要求新建物理模拟器，但离线指标不能替代原生机器人成功率。
+
 | 条件 | 规划 | 机器人动作 | Astra 介入 | 子任务初始图像记忆 |
 | --- | --- | --- | --- | --- |
 | `q_only` | Qwen | Qwen | 无 | 关 |

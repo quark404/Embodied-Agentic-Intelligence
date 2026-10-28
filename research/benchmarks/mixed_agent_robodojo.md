@@ -2,6 +2,8 @@
 
 协议草案日期：2026-10-28。此文件规定**将来实际运行前应冻结的比较关系**，不是已完成的 RoboDojo 成绩。主问题是：通用开源 Agent 与闭源前沿模型在机器人任务中差多少，差在何处，能否仅用少量闭源规划/诊断工具缩小差距？[任务目标](../../docs/任务规划.md)给出通俗版本；[RoboDojo 环境与论文核查](robodojo_qwen.md)给出已核查的公开依据。
 
+这是**未训练模型的第一阶段协议**。用户提供的 Agentic RL 方案已作为[第二阶段路线](agentic_rl_roadmap.md)并入项目；训练后的 Qwen 使用新 checkpoint、新条件名和独立训练/测试划分，不改写本文件的六组、Astra 配额或原生评测规则。
+
 ## 为什么选择受限工具范式
 
 [RoboICL（2026-09）](https://github.com/Mosi-AI/RoboICL/tree/17b379a6deea33f71bd31e05bd60d1daf627acfb) 将 GPT-6 Astra 放进完整的多轮动作控制与示范/交互记忆流程；[PyRUA-Lean（2026-10）](https://github.com/DAGroup-PKU/PyRUA-Lean/tree/fdf6e870654254e2c0c891ee407313fa48bdd0f9) 让模型写机器人 Python cells；[HexaShell（2026-10）](https://github.com/HexaFuture/HexaShell/tree/d1a2a24dc4c528a652b359fd689398530ef941d8) 用 GPT-6 Astra 的代码 Agent 与失败后工具修复，在 RoboDojo 官方评测报告 46.9%。三者展示了强模型与执行接口协同的可能性，但公开分数采用不同工具、模型、动作与任务协议，不能互作直接消融。
