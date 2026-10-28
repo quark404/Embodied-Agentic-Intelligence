@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 690" role="img" aria-labelledby="title desc">
+  <title id="title">研究路线：先测差距，再训练 Qwen，最后独立验收</title>
+  <desc id="desc">第一阶段包含 RoboDojo 接线、六组未训练对照和失败归因；第二阶段包含轨迹数据、示范学习、可验证局部训练以及关闭专家的 RoboDojo 复测。</desc>
+  <defs>
+    <marker id="arr" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto"><path d="M1 1 11 6 1 11" fill="none" stroke="#4e9296" stroke-width="2"/></marker>
+    <pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.3" fill="#31999d" opacity=".11"/></pattern>
+  </defs>
+  <rect width="1200" height="690" rx="28" fill="#f6f8f5"/><rect width="1200" height="690" rx="28" fill="url(#dots)"/>
+
+  <rect x="50" y="43" width="300" height="46" rx="23" fill="#d9f4ed"/>
+  <text x="75" y="75" font-family="sans-serif" font-size="21" font-weight="800" fill="#0d7780">阶段一 · 测清差距</text>
+  <rect x="50" y="358" width="300" height="46" rx="23" fill="#ffe9d9"/>
+  <text x="75" y="390" font-family="sans-serif" font-size="21" font-weight="800" fill="#a55637">阶段二 · 训练与验证</text>
+
+  <path d="M140 228H1039" stroke="#8ecbc6" stroke-width="5" fill="none" marker-end="url(#arr)"/>
+  <path d="M1030 260v208H188" stroke="#9bc2c4" stroke-width="3" stroke-dasharray="10 10" fill="none" marker-end="url(#arr)"/>
+  <path d="M140 544H1039" stroke="#e7b095" stroke-width="5" fill="none" marker-end="url(#arr)"/>
+
+  <!-- Phase one cards -->
+  <g><rect x="55" y="122" width="317" height="211" rx="23" fill="#ffffff"/><rect x="442" y="122" width="317" height="211" rx="23" fill="#ffffff"/><rect x="829" y="122" width="317" height="211" rx="23" fill="#ffffff"/></g>
+  <circle cx="90" cy="160" r="21" fill="#25adab"/><text x="90" y="168" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="800" fill="#ffffff">1</text>
+  <text x="125" y="170" font-family="sans-serif" font-size="24" font-weight="800" fill="#163e4b">RoboDojo 接线</text>
+  <text x="77" y="208" font-family="sans-serif" font-size="17" fill="#5a7680">相机 · 动作 · 原生评分</text>
+  <path d="M78 250h216" stroke="#d8eeeb" stroke-width="2"/>
+  <text x="78" y="281" font-family="sans-serif" font-size="16" fill="#3b7f82">先确认真实 episode 可运行</text>
+
+  <circle cx="477" cy="160" r="21" fill="#25adab"/><text x="477" y="168" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="800" fill="#ffffff">2</text>
+  <text x="512" y="170" font-family="sans-serif" font-size="24" font-weight="800" fill="#163e4b">六组配对实验</text>
+  <text x="464" y="208" font-family="sans-serif" font-size="17" fill="#5a7680">Qwen · Astra 工具 · 记忆</text>
+  <path d="M464 250h216" stroke="#d8eeeb" stroke-width="2"/>
+  <text x="464" y="281" font-family="sans-serif" font-size="16" fill="#3b7f82">相同任务、布局与物理预算</text>
+
+  <circle cx="864" cy="160" r="21" fill="#25adab"/><text x="864" y="168" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="800" fill="#ffffff">3</text>
+  <text x="899" y="170" font-family="sans-serif" font-size="24" font-weight="800" fill="#163e4b">定位失败环节</text>
+  <text x="851" y="208" font-family="sans-serif" font-size="17" fill="#5a7680">感知 · 规划 · 执行 · 纠错</text>
+  <path d="M851 250h216" stroke="#d8eeeb" stroke-width="2"/>
+  <text x="851" y="281" font-family="sans-serif" font-size="16" fill="#3b7f82">先分类，再选择训练目标</text>
+
+  <!-- Phase two cards -->
+  <g><rect x="55" y="431" width="317" height="211" rx="23" fill="#ffffff"/><rect x="442" y="431" width="317" height="211" rx="23" fill="#ffffff"/><rect x="829" y="431" width="317" height="211" rx="23" fill="#ffffff"/></g>
+  <circle cx="90" cy="469" r="21" fill="#e98750"/><text x="90" y="477" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="800" fill="#ffffff">4</text>
+  <text x="125" y="479" font-family="sans-serif" font-size="24" font-weight="800" fill="#163e4b">轨迹与 SFT</text>
+  <text x="77" y="517" font-family="sans-serif" font-size="17" fill="#5a7680">只用训练划分的合法记录</text>
+  <path d="M78 559h216" stroke="#f6dfd1" stroke-width="2"/>
+  <text x="78" y="590" font-family="sans-serif" font-size="16" fill="#aa6245">学会基本格式与回执理解</text>
+
+  <circle cx="477" cy="469" r="21" fill="#e98750"/><text x="477" y="477" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="800" fill="#ffffff">5</text>
+  <text x="512" y="479" font-family="sans-serif" font-size="24" font-weight="800" fill="#163e4b">局部可验证训练</text>
+  <text x="464" y="517" font-family="sans-serif" font-size="17" fill="#5a7680">工具选择 · 检查 · 恢复</text>
+  <path d="M464 559h216" stroke="#f6dfd1" stroke-width="2"/>
+  <text x="464" y="590" font-family="sans-serif" font-size="16" fill="#aa6245">研究何时求助、何时继续</text>
+
+  <circle cx="864" cy="469" r="21" fill="#e98750"/><text x="864" y="477" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="800" fill="#ffffff">6</text>
+  <text x="899" y="479" font-family="sans-serif" font-size="24" font-weight="800" fill="#163e4b">独立闭环验收</text>
+  <text x="851" y="517" font-family="sans-serif" font-size="17" fill="#5a7680">未见任务/布局 · 原生评分</text>
+  <path d="M851 559h216" stroke="#f6dfd1" stroke-width="2"/>
+  <text x="851" y="590" font-family="sans-serif" font-size="16" fill="#aa6245">关闭 Astra 后还能成功吗？</text>
+
+  <text x="1113" y="670" text-anchor="end" font-family="sans-serif" font-size="15" fill="#82959c">研究阶段示意 · 结果待验证</text>
+</svg>

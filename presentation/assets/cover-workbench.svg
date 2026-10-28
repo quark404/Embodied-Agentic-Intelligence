@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 780" role="img" aria-labelledby="title desc">
+  <title id="title">具身智能研究示意：双臂机器人在工作台操作方块</title>
+  <desc id="desc">深色实验室中，两只机器人手臂面对桌面上的蓝色、橙色和青色物体，三台相机观察场景，反馈沿着视觉连线返回。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#071b30"/><stop offset="1" stop-color="#123c4b"/></linearGradient>
+    <linearGradient id="arm" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d7eef0"/><stop offset="1" stop-color="#76b6bf"/></linearGradient>
+    <linearGradient id="table" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#143a4b"/><stop offset="1" stop-color="#215b67"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#56e0ca" stop-opacity=".22"/><stop offset="1" stop-color="#56e0ca" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="45" height="45" patternUnits="userSpaceOnUse"><path d="M45 0H0V45" fill="none" stroke="#b2e9df" stroke-opacity=".055" stroke-width="1"/></pattern>
+  </defs>
+  <rect width="1200" height="780" rx="32" fill="url(#bg)"/>
+  <rect width="1200" height="780" rx="32" fill="url(#grid)"/>
+  <circle cx="606" cy="348" r="440" fill="url(#glow)"/>
+  <path d="M95 140 Q594 95 1107 132" fill="none" stroke="#8ed9d5" stroke-opacity=".12" stroke-width="2"/>
+  <path d="M90 620 Q596 672 1111 618" fill="none" stroke="#8ed9d5" stroke-opacity=".15" stroke-width="2"/>
+
+  <!-- three public RGB cameras -->
+  <g fill="#0b2738" stroke="#7bd6d2" stroke-width="3">
+    <rect x="514" y="58" width="172" height="76" rx="18"/><rect x="105" y="197" width="142" height="64" rx="15"/><rect x="953" y="197" width="142" height="64" rx="15"/>
+  </g>
+  <g fill="#e2fbef"><circle cx="600" cy="96" r="24"/><circle cx="177" cy="229" r="19"/><circle cx="1025" cy="229" r="19"/></g>
+  <g fill="#0e4655"><circle cx="600" cy="96" r="14"/><circle cx="177" cy="229" r="11"/><circle cx="1025" cy="229" r="11"/></g>
+  <g fill="#55e0cb"><circle cx="600" cy="96" r="6"/><circle cx="177" cy="229" r="5"/><circle cx="1025" cy="229" r="5"/></g>
+  <path d="M600 139v150M247 230l285 164M953 230 666 394" fill="none" stroke="#6ee5d4" stroke-opacity=".45" stroke-width="2" stroke-dasharray="8 9"/>
+  <path d="M177 230 352 586M1025 230 844 586" fill="none" stroke="#6ee5d4" stroke-opacity=".18" stroke-width="2"/>
+
+  <!-- workbench -->
+  <g>
+    <path d="M278 501h644l90 108H185z" fill="#123848" stroke="#4b98a0" stroke-width="3"/>
+    <path d="M185 609h827v45H185z" fill="url(#table)"/>
+    <path d="M251 654v76h44v-76M903 654v76h44v-76" fill="#153a4a"/>
+    <path d="M278 501h644" stroke="#71d8c7" stroke-opacity=".48" stroke-width="5"/>
+  </g>
+  <path d="M388 552h410" stroke="#9bc9c1" stroke-opacity=".22" stroke-width="2" stroke-dasharray="9 14"/>
+
+  <!-- manipulation objects -->
+  <g>
+    <path d="M492 495l34-18 35 18v56l-35 19-34-19z" fill="#28adbd"/><path d="M492 495l34-18 35 18-35 17z" fill="#74e6da"/>
+    <path d="M619 488l37-20 36 20v64l-36 19-37-19z" fill="#db7044"/><path d="M619 488l37-20 36 20-36 19z" fill="#ffb580"/>
+    <rect x="733" y="514" width="84" height="45" rx="12" fill="#194c5a" stroke="#6ad5ca" stroke-width="3"/><path d="M751 523h48" stroke="#6ad5ca" stroke-width="3"/>
+  </g>
+  <circle cx="656" cy="518" r="68" fill="none" stroke="#ffb47f" stroke-opacity=".53" stroke-width="2" stroke-dasharray="7 8"/>
+  <circle cx="656" cy="518" r="88" fill="none" stroke="#ffb47f" stroke-opacity=".22" stroke-width="2"/>
+
+  <!-- left articulated robot arm -->
+  <g>
+    <rect x="105" y="461" width="116" height="110" rx="20" fill="#29596b" stroke="#b7e5e6" stroke-width="3"/>
+    <circle cx="193" cy="470" r="40" fill="#aacfd2" stroke="#e4f9f3" stroke-width="5"/>
+    <path d="M195 469 336 370" fill="none" stroke="#d7eef0" stroke-width="60" stroke-linecap="round"/>
+    <path d="M195 469 336 370" fill="none" stroke="#427d88" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="336" cy="370" r="36" fill="#77b3bb" stroke="#effdf4" stroke-width="5"/>
+    <path d="M336 370 469 428" fill="none" stroke="url(#arm)" stroke-width="48" stroke-linecap="round"/>
+    <path d="M336 370 469 428" fill="none" stroke="#457f87" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="469" cy="428" r="28" fill="#d8f0e9" stroke="#5dabb5" stroke-width="4"/>
+    <path d="M480 430 511 469" stroke="#d8f0e9" stroke-width="26" stroke-linecap="round"/>
+    <path d="M505 467 491 485M517 462 531 485" fill="none" stroke="#e8f7ee" stroke-width="12" stroke-linecap="round"/>
+  </g>
+
+  <!-- right articulated robot arm -->
+  <g>
+    <rect x="982" y="461" width="116" height="110" rx="20" fill="#29596b" stroke="#b7e5e6" stroke-width="3"/>
+    <circle cx="1006" cy="470" r="40" fill="#aacfd2" stroke="#e4f9f3" stroke-width="5"/>
+    <path d="M1006 469 866 369" fill="none" stroke="#d7eef0" stroke-width="60" stroke-linecap="round"/>
+    <path d="M1006 469 866 369" fill="none" stroke="#427d88" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="866" cy="369" r="36" fill="#77b3bb" stroke="#effdf4" stroke-width="5"/>
+    <path d="M866 369 731 425" fill="none" stroke="url(#arm)" stroke-width="48" stroke-linecap="round"/>
+    <path d="M866 369 731 425" fill="none" stroke="#457f87" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="731" cy="425" r="28" fill="#d8f0e9" stroke="#5dabb5" stroke-width="4"/>
+    <path d="M720 428 690 469" stroke="#d8f0e9" stroke-width="26" stroke-linecap="round"/>
+    <path d="M696 465 680 480M683 457 664 472" fill="none" stroke="#e8f7ee" stroke-width="12" stroke-linecap="round"/>
+  </g>
+
+  <!-- transparent interface accents -->
+  <g fill="none" stroke="#66dfcb" stroke-width="2"><path d="M264 331h86m-86 0v-50M934 331h-86m86 0v-50" opacity=".55"/><path d="M538 320h124m-124 0v33m124-33v33" opacity=".42"/></g>
+  <g fill="#65e1cb"><circle cx="267" cy="331" r="5"/><circle cx="934" cy="331" r="5"/><circle cx="600" cy="289" r="5"/></g>
+  <path d="M88 744h1024" stroke="#a3e7da" stroke-opacity=".25" stroke-width="2"/>
+</svg>

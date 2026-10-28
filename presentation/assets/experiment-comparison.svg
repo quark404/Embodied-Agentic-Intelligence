@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 735" role="img" aria-labelledby="title desc">
+  <title id="title">六组对照实验的角色矩阵</title>
+  <desc id="desc">Qwen 始终承担混合组的机器人动作决策；Astra 只在指定组提供规划或诊断。完整 Astra Agent 是单独的参考组。这是实验条件示意，不是结果图。</desc>
+  <defs>
+    <g id="q"><rect width="133" height="37" rx="18" fill="#d9f4ee"/><text x="66.5" y="25" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="700" fill="#087c82">Qwen</text></g>
+    <g id="a"><rect width="133" height="37" rx="18" fill="#ffe9da"/><text x="66.5" y="25" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="700" fill="#a75231">Astra</text></g>
+    <g id="off"><rect width="133" height="37" rx="18" fill="#eef1f1"/><text x="66.5" y="25" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#879397">—</text></g>
+    <g id="memory"><rect width="133" height="37" rx="18" fill="#c8f0e7"/><text x="66.5" y="25" text-anchor="middle" font-family="sans-serif" font-size="17" font-weight="700" fill="#087c70">起始图像</text></g>
+  </defs>
+  <rect width="1200" height="735" rx="27" fill="#f5f8f6"/>
+  <text x="50" y="58" font-family="sans-serif" font-size="19" font-weight="700" fill="#567079">条件</text>
+  <text x="334" y="58" font-family="sans-serif" font-size="19" font-weight="700" fill="#567079">规划</text>
+  <text x="514" y="58" font-family="sans-serif" font-size="19" font-weight="700" fill="#567079">诊断</text>
+  <text x="694" y="58" font-family="sans-serif" font-size="19" font-weight="700" fill="#567079">机器人动作</text>
+  <text x="957" y="58" font-family="sans-serif" font-size="19" font-weight="700" fill="#567079">图像记忆</text>
+
+  <g><rect x="30" y="81" width="1140" height="83" rx="19" fill="#ffffff"/></g>
+  <rect x="31" y="81" width="10" height="83" rx="5" fill="#168d9b"/>
+  <text x="60" y="115" font-family="sans-serif" font-size="23" font-weight="750" fill="#143849">Qwen 单独</text>
+  <text x="60" y="141" font-family="sans-serif" font-size="15" fill="#6e868e">未训练基线</text>
+  <use href="#q" x="315" y="104"/><use href="#off" x="495" y="104"/><use href="#q" x="697" y="104"/><use href="#off" x="950" y="104"/>
+
+  <g><rect x="30" y="174" width="1140" height="83" rx="19" fill="#ffffff"/></g>
+  <rect x="31" y="174" width="10" height="83" rx="5" fill="#e2854d"/>
+  <text x="60" y="207" font-family="sans-serif" font-size="23" font-weight="750" fill="#143849">+ 规划建议</text>
+  <text x="60" y="234" font-family="sans-serif" font-size="15" fill="#6e868e">最多调用一次</text>
+  <use href="#a" x="315" y="197"/><use href="#off" x="495" y="197"/><use href="#q" x="697" y="197"/><use href="#off" x="950" y="197"/>
+
+  <g><rect x="30" y="267" width="1140" height="83" rx="19" fill="#ffffff"/></g>
+  <rect x="31" y="267" width="10" height="83" rx="5" fill="#e2854d"/>
+  <text x="60" y="300" font-family="sans-serif" font-size="23" font-weight="750" fill="#143849">+ 故障诊断</text>
+  <text x="60" y="327" font-family="sans-serif" font-size="15" fill="#6e868e">最多调用一次</text>
+  <use href="#q" x="315" y="290"/><use href="#a" x="495" y="290"/><use href="#q" x="697" y="290"/><use href="#off" x="950" y="290"/>
+
+  <g><rect x="30" y="360" width="1140" height="83" rx="19" fill="#ffffff"/></g>
+  <rect x="31" y="360" width="10" height="83" rx="5" fill="#e2854d"/>
+  <text x="60" y="393" font-family="sans-serif" font-size="23" font-weight="750" fill="#143849">+ 规划与诊断</text>
+  <text x="60" y="420" font-family="sans-serif" font-size="15" fill="#6e868e">合计最多两次</text>
+  <use href="#a" x="315" y="383"/><use href="#a" x="495" y="383"/><use href="#q" x="697" y="383"/><use href="#off" x="950" y="383"/>
+
+  <g><rect x="30" y="453" width="1140" height="83" rx="19" fill="#ffffff"/></g>
+  <rect x="31" y="453" width="10" height="83" rx="5" fill="#32b7a8"/>
+  <text x="60" y="486" font-family="sans-serif" font-size="23" font-weight="750" fill="#143849">+ 初始图像记忆</text>
+  <text x="60" y="513" font-family="sans-serif" font-size="15" fill="#6e868e">在上一组基础上</text>
+  <use href="#a" x="315" y="476"/><use href="#a" x="495" y="476"/><use href="#q" x="697" y="476"/><use href="#memory" x="950" y="476"/>
+
+  <g><rect x="30" y="546" width="1140" height="83" rx="19" fill="#eaf0f2"/></g>
+  <rect x="31" y="546" width="10" height="83" rx="5" fill="#536e7d"/>
+  <text x="60" y="579" font-family="sans-serif" font-size="23" font-weight="750" fill="#143849">完整 Astra 参考</text>
+  <text x="60" y="606" font-family="sans-serif" font-size="15" fill="#6e868e">小样本，单独报告</text>
+  <use href="#a" x="315" y="569"/><use href="#a" x="495" y="569"/><use href="#a" x="697" y="569"/><use href="#off" x="950" y="569"/>
+
+  <path d="M50 659h1100" stroke="#c7d9d8" stroke-width="2"/>
+  <circle cx="70" cy="689" r="6" fill="#e2854d"/><text x="87" y="695" font-family="sans-serif" font-size="16" fill="#59717c">橙色 = 闭源介入</text>
+  <circle cx="330" cy="689" r="6" fill="#168d9b"/><text x="347" y="695" font-family="sans-serif" font-size="16" fill="#59717c">青色 = Qwen 决策</text>
+  <text x="1124" y="696" text-anchor="end" font-family="sans-serif" font-size="15" fill="#799198">实验设计示意 · 不是成绩</text>
+</svg>

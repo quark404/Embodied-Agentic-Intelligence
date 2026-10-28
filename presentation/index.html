@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>具身 Agent：差距在哪，怎样补上？｜研究汇报</title>
+  <meta name="description" content="Qwen × GPT-6 Astra × RoboDojo：具身 Agent 能力差距、受限专家工具与后续 Agentic RL 研究设计。">
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./deck.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#deck">跳到幻灯片</a>
+  <header class="topbar" aria-label="演示工具栏">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>Embodied Agentic Intelligence</span></div>
+    <div class="topbar-actions"><span class="topbar-caption">研究方案 · 2026.10</span><button id="printButton" class="toolbar-button" type="button" title="打印或另存为 PDF">导出 PDF ↗</button></div>
+  </header>
+
+  <main id="deck" class="deck" aria-live="polite">
+    <section class="slide slide-cover is-active" data-slide="0" aria-labelledby="slide-title-1">
+      <div class="cover-copy">
+        <p class="eyebrow"><span class="eyebrow-line"></span>研究设计 / RoboDojo</p>
+        <h1 id="slide-title-1">具身 Agent：<br><em>差距在哪，</em><br>怎样补上？</h1>
+        <p class="lead">用同一套机器人任务，比较 Qwen 与前沿模型；再看少量专家建议，能否真正帮助 Qwen。</p>
+        <div class="cover-tags"><span>Qwen 主控制</span><span>Astra 受限工具</span><span>RoboDojo 原生评分</span></div>
+        <p class="cover-note">这是实验设计汇报，尚无本项目真实 RoboDojo 跑分。</p>
+      </div>
+      <div class="cover-visual"><img src="./assets/cover-workbench.svg" alt="双臂机器人在工作台前操作物体的概念示意图"></div>
+      <div class="cover-orbit" aria-hidden="true"></div>
+    </section>
+
+    <section class="slide" data-slide="1" aria-labelledby="slide-title-2">
+      <div class="slide-heading"><p class="eyebrow">01 / 为什么研究</p><h2 id="slide-title-2">看懂任务，不等于做完任务。</h2><p class="subtitle">机器人需要一连串正确判断；任何一环都可能让任务失败。</p></div>
+      <div class="ability-chain" role="img" aria-label="从视觉理解、任务规划、机器人动作、反馈纠错到历史记忆的能力链">
+        <div class="ability-card"><span class="ability-index">01</span><span class="ability-icon">◉</span><h3>看</h3><p>找到目标和当前位置</p></div>
+        <div class="chain-arrow" aria-hidden="true">→</div>
+        <div class="ability-card"><span class="ability-index">02</span><span class="ability-icon">▤</span><h3>想</h3><p>拆解步骤和先后顺序</p></div>
+        <div class="chain-arrow" aria-hidden="true">→</div>
+        <div class="ability-card"><span class="ability-index">03</span><span class="ability-icon">⌁</span><h3>做</h3><p>给出安全、有效的动作</p></div>
+        <div class="chain-arrow" aria-hidden="true">→</div>
+        <div class="ability-card"><span class="ability-index">04</span><span class="ability-icon">↻</span><h3>查</h3><p>失败后调整下一步</p></div>
+        <div class="chain-arrow" aria-hidden="true">→</div>
+        <div class="ability-card"><span class="ability-index">05</span><span class="ability-icon">▣</span><h3>记</h3><p>需要时找回过去所见</p></div>
+      </div>
+      <div class="statement-band"><span class="statement-dot"></span><p>我们要找到：<strong>开源 Agent 与前沿模型的差距，究竟集中在哪些环节？</strong></p></div>
+    </section>
+
+    <section class="slide" data-slide="2" aria-labelledby="slide-title-3">
+      <div class="slide-heading"><p class="eyebrow">02 / 核心问题</p><h2 id="slide-title-3">我们想回答三个简单问题。</h2></div>
+      <div class="question-grid">
+        <article class="question-card"><span class="question-number">01</span><div class="question-symbol symbol-gap" aria-hidden="true">↔</div><h3>差距在哪里？</h3><p>同一任务、同一动作接口，比较 Qwen Agent 与小样本完整 Astra Agent。</p><span class="question-test">看各类任务和失败原因</span></article>
+        <article class="question-card"><span class="question-number">02</span><div class="question-symbol symbol-tool" aria-hidden="true">✦</div><h3>少量建议有用吗？</h3><p>仅让 Astra 给计划或诊断；Qwen 仍决定每一步机器人动作。</p><span class="question-test">量出收益和调用成本</span></article>
+        <article class="question-card"><span class="question-number">03</span><div class="question-symbol symbol-learn" aria-hidden="true">↗</div><h3>Qwen 自己能学会吗？</h3><p>后续训练后关闭 Astra，再测 Qwen 是否仍有进步。</p><span class="question-test">用独立闭环测试回答</span></article>
+      </div>
+      <p class="slide-footnote">以上都是待验证问题，不是已有结论。</p>
+    </section>
+
+    <section class="slide" data-slide="3" aria-labelledby="slide-title-4">
+      <div class="slide-heading"><p class="eyebrow">03 / 初步系统设计</p><h2 id="slide-title-4">Qwen 掌舵，Astra 只做“认知工具”。</h2><p class="subtitle">模型看到公开相机与机器人状态；动作由 Qwen 选择，成功由 RoboDojo 判定。</p></div>
+      <div class="architecture-figure"><img src="./assets/agent-loop.svg" alt="RoboDojo 提供观察，Qwen 选择动作，按条件调用 Astra 规划或诊断，动作经过安全检查后执行并由 RoboDojo 评分的流程图"></div>
+      <div class="rule-row"><span><i class="rule-icon teal"></i>混合组：Qwen 决定所有动作</span><span><i class="rule-icon orange"></i>Astra：每回合最多 1 次规划 + 1 次诊断</span><span><i class="rule-icon navy"></i>原生评分：模型不能自报成功</span></div>
+    </section>
+
+    <section class="slide" data-slide="4" aria-labelledby="slide-title-5">
+      <div class="slide-heading"><p class="eyebrow">04 / 对照实验</p><h2 id="slide-title-5">只改变一项，才能知道是谁带来的帮助。</h2><p class="subtitle">未训练阶段的六个条件；混合组始终由 Qwen 操作机器人。</p></div>
+      <div class="matrix-wrap">
+        <table class="experiment-matrix"><thead><tr><th scope="col">条件</th><th scope="col">任务规划</th><th scope="col">失败诊断</th><th scope="col">动作决策</th><th scope="col">起始图像记忆</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><span class="matrix-label">Qwen 基线</span><small>q_only</small></th><td>Qwen</td><td>Qwen</td><td><strong>Qwen</strong></td><td>关闭</td></tr>
+            <tr><th scope="row"><span class="matrix-label">规划工具</span><small>hybrid_plan</small></th><td class="cell-highlight">Astra 首次建议¹</td><td>Qwen</td><td><strong>Qwen</strong></td><td>关闭</td></tr>
+            <tr><th scope="row"><span class="matrix-label">诊断工具</span><small>hybrid_diagnose</small></th><td>Qwen</td><td class="cell-highlight">Astra 最多一次</td><td><strong>Qwen</strong></td><td>关闭</td></tr>
+            <tr><th scope="row"><span class="matrix-label">两种工具</span><small>hybrid_both</small></th><td class="cell-highlight">Astra 首次建议¹</td><td class="cell-highlight">Astra 最多一次</td><td><strong>Qwen</strong></td><td>关闭</td></tr>
+            <tr><th scope="row"><span class="matrix-label">加图像记忆</span><small>hybrid_both_memory</small></th><td class="cell-highlight">Astra 首次建议¹</td><td class="cell-highlight">Astra 最多一次</td><td><strong>Qwen</strong></td><td class="cell-memory">开启</td></tr>
+            <tr class="reference-row"><th scope="row"><span class="matrix-label">前沿模型参照</span><small>astra_reference</small></th><td>Astra</td><td>Astra</td><td><strong>Astra</strong></td><td>关闭 · 小样本</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="slide-footnote">¹ Astra 最多给 1 次初始计划；用尽配额后由 Qwen 重新规划。完整 Astra 是单独的参考组，不受混合组 2 次工具调用上限约束。<a href="./assets/experiment-comparison.svg" target="_blank" rel="noopener">查看六组关系图 ↗</a><span class="mobile-hint">窄屏可左右滑动表格。</span></p>
+    </section>
+
+    <section class="slide" data-slide="5" aria-labelledby="slide-title-6">
+      <div class="slide-heading"><p class="eyebrow">05 / 任务级图像记忆</p><h2 id="slide-title-6">记住“开始时看见了什么”。</h2><p class="subtitle">在开启记忆的条件中，每个子任务开始保存初始图像，需要回顾时按子任务 ID 找回。</p></div>
+      <div class="memory-story">
+        <article class="story-card"><div class="story-top"><span>① 子任务开始</span><small>当前相机</small></div><div class="camera-scene"><span class="block block-red"></span><span class="block block-blue"></span><span class="block block-yellow"></span><span class="scene-label">原始图像</span></div><h3>保存初始画面</h3><p>绑定 task / episode / subtask ID。</p></article>
+        <div class="story-arrow" aria-hidden="true">→</div>
+        <article class="story-card"><div class="story-top"><span>② 后续交互</span><small>新观察</small></div><div class="camera-scene scene-occluded"><span class="cup cup-left"></span><span class="cup cup-middle"></span><span class="cup cup-right"></span><span class="scene-label">物体被遮住</span></div><h3>信息暂时不可见</h3><p>当前相机不一定还能回答问题。</p></article>
+        <div class="story-arrow" aria-hidden="true">→</div>
+        <article class="story-card story-card-recall"><div class="story-top"><span>③ 显式回忆</span><small>历史图像</small></div><div class="recall-panel"><span class="recall-query">recall(subtask_id)</span><span class="recall-mini"><i class="block-red"></i><i class="block-blue"></i><i class="block-yellow"></i></span><span class="recall-caption">标记为过去的起始画面</span></div><h3>找回历史证据</h3><p>与当前图像并列，交由 Qwen 判断。</p></article>
+      </div>
+      <div class="simple-callout"><strong>它不是向量 RAG。</strong><span>只在同一任务、同一 episode 内按 ID 取回；回忆也不能证明子任务已成功。</span></div>
+    </section>
+
+    <section class="slide" data-slide="6" aria-labelledby="slide-title-7">
+      <div class="slide-heading"><p class="eyebrow">06 / RoboDojo 实验任务</p><h2 id="slide-title-7">先从简单任务确认“能跑”，再测试能力边界。</h2></div>
+      <div class="task-layout">
+        <div class="task-hero"><div class="task-hero-icon" aria-hidden="true">◎</div><span class="task-kicker">先导入口 / Open</span><h3>general_pickup</h3><p>先核对相机、合法动作、原生评分与 Qwen 是否能产生有效操作。</p><span class="task-badge">先确认链路可用</span></div>
+        <div class="task-list">
+          <article class="task-mini"><span class="task-mini-id">01</span><div><small>Precision · 精细操作</small><h3>build_tower</h3><p>检验定位与控制精度。</p></div></article>
+          <article class="task-mini"><span class="task-mini-id">02</span><div><small>Long-Horizon · 长程</small><h3>fill_pen_holder</h3><p>检验步骤规划与纠错。</p></div></article>
+          <article class="task-mini"><span class="task-mini-id">03</span><div><small>Memory · 记忆</small><h3>cover_blocks</h3><p>检验起始图像回忆是否有用。</p></div></article>
+          <article class="task-mini"><span class="task-mini-id">04</span><div><small>Memory · 边界案例</small><h3>imitate_sorting_sequence</h3><p>运行中演示可能超出起始图记忆。</p></div></article>
+        </div>
+      </div>
+      <p class="slide-footnote">首轮配置目前含 general_pickup、cover_blocks、fill_pen_holder；其他任务属于后续扩展计划。</p>
+    </section>
+
+    <section class="slide" data-slide="7" aria-labelledby="slide-title-8">
+      <div class="slide-heading"><p class="eyebrow">07 / 如何解释实验</p><h2 id="slide-title-8">看“哪一步改善”，也看“还卡在哪里”。</h2><p class="subtitle">下面是结论判读方式，尚不是实验结果。</p></div>
+      <div class="interpret-grid">
+        <article class="interpret-card"><span class="interpret-sign">如果 ①</span><h3>规划工具有帮助</h3><p>混合规划组比 Qwen 基线更好，说明任务拆解可能是关键瓶颈。</p><span class="interpret-arrow">→ 继续看动作是否仍失败</span></article>
+        <article class="interpret-card"><span class="interpret-sign">如果 ②</span><h3>诊断工具有帮助</h3><p>失败后恢复更多、重复错误更少，说明反馈理解可能有改善空间。</p><span class="interpret-arrow">→ 同时报告额外调用成本</span></article>
+        <article class="interpret-card"><span class="interpret-sign">如果 ③</span><h3>两者都帮不上忙</h3><p>先审查视觉证据和动作控制；不能直接断言“规划与诊断无用”。</p><span class="interpret-arrow">→ 必须看失败轨迹</span></article>
+      </div>
+      <div class="metric-strip"><span>原生成功率 / 进度</span><span>动作合法率 / 恢复率</span><span>模型调用 / 时间 / 费用</span><span>相同任务、布局和预算</span></div>
+    </section>
+
+    <section class="slide" data-slide="8" aria-labelledby="slide-title-9">
+      <div class="slide-heading"><p class="eyebrow">08 / 第二阶段：让 Qwen 真正学会</p><h2 id="slide-title-9">先诊断，再训练，最后撤除专家。</h2><p class="subtitle">训练后仍用独立 RoboDojo 闭环来验收，而不拿离线得分代替机器人成功。</p></div>
+      <div class="roadmap-figure"><img src="./assets/research-roadmap.svg" alt="从未训练差距诊断、轨迹与标签、示范学习、可验证局部训练、求助策略到关闭 Astra 的独立闭环验收的研究路线图"></div>
+      <p class="slide-footnote">借鉴 RoboICL、ToolRL、Router-R1 等的方法线索；新增论文尚未逐篇核读。Agentic RL 目前是规划，尚未训练模型。</p>
+    </section>
+
+    <section class="slide slide-final" data-slide="9" aria-labelledby="slide-title-10">
+      <div class="slide-heading"><p class="eyebrow">09 / 当前进度与下一步</p><h2 id="slide-title-10">先让真实 RoboDojo 链路跑通。</h2></div>
+      <div class="status-grid">
+        <article class="status-card status-done"><span class="status-icon">✓</span><h3>已搭建</h3><p>六组 Harness、Qwen/Astra 角色限制、任务级图像记忆、XPolicyLab 接入和结果汇总。</p><div class="status-meta">38 个假环境 / 契约测试通过</div></article>
+        <article class="status-card status-pending"><span class="status-icon">◌</span><h3>待真实验证</h3><p>Isaac 仿真、Qwen 与 Astra 端点、RoboDojo 原生 episode、实际成功率和调用成本。</p><div class="status-meta">目前没有本项目的机器人跑分</div></article>
+      </div>
+      <div class="next-steps"><div><b>1</b><span>跑通单个原生 episode</span></div><i aria-hidden="true">→</i><div><b>2</b><span>固定简单任务先导</span></div><i aria-hidden="true">→</i><div><b>3</b><span>再开展完整对照与训练</span></div></div>
+      <div class="sources"><span>依据：</span><a href="../docs/任务规划.md">中文任务规划</a><a href="../research/benchmarks/mixed_agent_robodojo.md">RoboDojo 实验协议</a><a href="../research/benchmarks/agentic_rl_roadmap.md">Agentic RL 路线</a></div>
+    </section>
+  </main>
+
+  <nav class="slide-nav" aria-label="幻灯片导航"><button id="prevButton" class="nav-arrow" type="button" aria-label="上一页">←</button><span id="pageCount" class="page-count">01 / 10</span><div id="slideDots" class="slide-dots" aria-label="跳转到指定页面"></div><button id="nextButton" class="nav-arrow" type="button" aria-label="下一页">→</button></nav>
+  <div class="keyboard-hint" aria-hidden="true">← → 翻页 · F 全屏</div>
+  <noscript><p class="noscript">请启用 JavaScript 以逐页浏览幻灯片；也可以用浏览器打印功能查看全部页面。</p></noscript>
+</body>
+</html>
