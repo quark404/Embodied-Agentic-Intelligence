@@ -1,0 +1,33 @@
+{
+  "qwen": {
+    "base_url": "http://127.0.0.1:18000/v1",
+    "model": "Qwen/Qwen3.5-27B",
+    "mode": "chat_completions",
+    "api_key_env": "MODEL_API_KEY",
+    "timeout_seconds": 600,
+    "max_output_tokens": 8192
+  },
+  "astra": {
+    "base_url": "https://your-astra-provider.example/v1",
+    "model": "gpt-6-astra",
+    "mode": "responses",
+    "api_key_env": "ASTRA_API_KEY",
+    "timeout_seconds": 600,
+    "advisor_max_output_tokens": 1200,
+    "reference_max_output_tokens": 8192
+  },
+  "advisor_limits": {
+    "max_total_calls": 2,
+    "max_plan_calls": 1,
+    "max_diagnosis_calls": 1
+  },
+  "harness": {
+    "max_decisions": 40,
+    "max_tool_calls": 30,
+    "max_recall_calls": 8,
+    "max_replans": 3,
+    "max_seconds": 3600,
+    "max_subtasks": 10,
+    "recall_limit": 3
+  }
+}

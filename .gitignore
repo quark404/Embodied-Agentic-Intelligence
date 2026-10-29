@@ -2,3 +2,9 @@ __pycache__/
 *.pyc
 .pytest_cache/
 runs/
+.venv*/
+.env
+.env.*
+!.env.example
+*.private.json
+*.private.log

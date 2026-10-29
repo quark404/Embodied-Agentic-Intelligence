@@ -108,7 +108,8 @@ class HarnessChatPlanner:
         response = _call_model(self.transport, {"model": self.model, "temperature": 0,
             "max_tokens": self.max_output_tokens,
             "messages": [{"role": "system", "content":
-                "Return a JSON array of remaining subtasks, each with unique id, instruction, "
+                "Return only a raw JSON array, without Markdown code fences or surrounding text, "
+                "of remaining subtasks, each with unique id, instruction, "
                 "and optional string-list tags. Do not repeat completed subtask IDs. "
                 "Use the current image and failure receipt when replanning."},
                 {"role": "user", "content": content}]}, self._events, self.model, "planner")
@@ -197,7 +198,8 @@ class HarnessChatPolicy:
         response = _call_model(self.transport, {"model": self.model, "temperature": 0,
             "max_tokens": self.max_output_tokens,
             "messages": [{"role": "system", "content":
-                "Return exactly one JSON object, using only allowed_decisions. Choices: "
+                "Return exactly one raw JSON object without Markdown code fences or surrounding text, "
+                "using only allowed_decisions. Choices: "
                 "{\"kind\":\"tool\",\"tool\":name,\"args\":{...}}, "
                 "{\"kind\":\"recall\",\"recall_subtask_id\":id}, or "
                 "{\"kind\":\"replan\"}, or {\"kind\":\"advance\"} to move to the next "

@@ -1,0 +1,5 @@
+{
+  "tasks": [
+    {"task_id": "general_pickup", "seed": 0, "eval_num": 1}
+  ]
+}

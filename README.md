@@ -10,7 +10,7 @@
 
 需要汇报时可直接打开[逐页 HTML 幻灯片](presentation/index.html)：含 Harness 流程、六组对照、任务级图像记忆与两阶段研究路线示意，也可在浏览器中导出 PDF。
 
-后续研究将探索 **Qwen 具身 Agentic RL**：用未训练对照的失败轨迹定位值得学的能力，先做示范学习与有标准答案的局部训练，再训练“何时请求 Astra”，最后在独立 RoboDojo 闭环任务中测试**撤除 Astra 后是否仍有提升**。[第二阶段路线与论文借鉴](research/benchmarks/agentic_rl_roadmap.md)已单独规划；当前六组和代码仍是未训练基线，尚无训练后成绩。该路线不要求新建物理模拟器，但离线指标不能替代原生机器人成功率。
+研究包含两个先后衔接、各自需要结论的重点：**先分析哪些能力最值得闭源模型补强，再研究如何用低成本 Agentic RL 让 Qwen 学到这些能力**。第一阶段通过同接口差距、受限单项建议、自建议对照及闭环结果形成能力地图，不预设规划、验证或恢复一定是瓶颈；第二阶段依据证据构建可执行轻量环境，直接进行多轮 RL，最后在独立 RoboDojo 任务中测试**撤除 Astra 后是否仍有提升**。**当前不考虑 SFT，不把它设为训练前置条件；是否补充留到主线完成后再议。** [能力诊断与下一步安排](docs/能力诊断与推进计划.md)规定对照与推进门槛，[第二阶段路线与论文借鉴](research/benchmarks/agentic_rl_roadmap.md)说明训练设计。当前六组仍是未训练基线，能力级新对照与训练均未实现，尚无真实具身或训练后成绩；轻量环境指标不能替代原生机器人成功率。
 
 | 条件 | 规划 | 机器人动作 | Astra 介入 | 子任务初始图像记忆 |
 | --- | --- | --- | --- | --- |
@@ -31,6 +31,8 @@
 
 ## 代码与本地契约测试
 
+新服务器先看[跨服务器开发与部署](docs/跨服务器开发与部署.md)：包含目录职责、最小 CPU 环境、四类环境隔离、双机连接和私有运行资料的边界。
+
 - [`embodied_agentic/harness.py`](embodied_agentic/harness.py)：有预算的规划—动作—观察循环，原生成功归环境所有。
 - [`embodied_agentic/advisory.py`](embodied_agentic/advisory.py)、[`experiment.py`](embodied_agentic/experiment.py)：受限 Astra 规划/诊断、六个冻结条件、Qwen 动作端。
 - [`embodied_agentic/image_memory.py`](embodied_agentic/image_memory.py)：按 task/episode/subtask 隔离的起始图像。
@@ -39,15 +41,21 @@
 
 ```bash
 cd /path/to/Embodied-Agentic-Intelligence
-python3 -m unittest discover -s tests -v
-python3 -m embodied_agentic.experiment --config configs/robodojo_mixed.example.json
+python3.11 -m venv .venv-dev
+.venv-dev/bin/python -m pip install -r requirements/dev.txt
+.venv-dev/bin/python -B -m unittest discover -s tests -v
+.venv-dev/bin/python -B -m embodied_agentic.experiment --config configs/robodojo_mixed.example.json
 ```
 
 这些测试使用合成观察或假环境，验证条件权限、动作契约、预算、记忆隔离和评分归属；它们**不能证明模型的 RoboDojo 成功率**。
 
 ## 接入真实 RoboDojo
 
-先按 [RoboICL 安装说明](https://github.com/Mosi-AI/RoboICL)配置 RoboDojo/XPolicyLab、Isaac 环境、机器人资产及模型服务。首选 RoboICL 风格的 `ee_delta` 控制，它要求 Mosi-AI 固定的 RoboDojo fork 提交 `00ef04cd245bfa76e6f1e0bd8383c82f7964f942`：代码会检查 fork 的原生 IK 连续性保护并在缺失时停止。官方 main 可选 `joint` 控制；**同一实验的所有组必须使用同一 fork 和模式**。此处未提供可运行的 GPU 仿真或真实 Qwen/Astra 端点，实际分数仍待实验。
+Qwen 本地服务使用单独的 [Qwen3.5-27B 推理环境](docs/Qwen3.5推理环境.md)：固定 BF16 权重与服务版本，提供下载、启动和多模态/工具接口检查脚本。新配置为 `configs/robodojo_qwen35_27b.local.example.json`；不覆盖原六组示例，不部署 Qwen3.8，也不代表真实 RoboDojo 已验证。
+
+集群仿真按 [AIDI 单卡预检与隔离部署](cluster_eval/README.md) 推进：使用指定 5090 队列，先验证驱动、图形库和 JFS，再接 Qwen 与原生任务；不修改现有训练环境。2026-10-29 已提交一个低优先级单卡预检，提交回执不代表仿真已跑通。
+
+先按 [RoboICL 安装说明](https://github.com/Mosi-AI/RoboICL)配置 RoboDojo/XPolicyLab、Isaac 环境、机器人资产及模型服务。首选 RoboICL 风格的 `ee_delta` 控制，它要求 Mosi-AI 固定的 RoboDojo fork 提交 `00ef04cd245bfa76e6f1e0bd8383c82f7964f942`：代码会检查 fork 的原生 IK 连续性保护并在缺失时停止。官方 main 可选 `joint` 控制；**同一实验的所有组必须使用同一 fork 和模式**。2026-10-29 已验证本地 Qwen3.5-27B 文本、三图像、工具调用及 Harness 解析；RoboDojo GPU 仿真和 Astra 端点仍未验证，实际具身分数仍待实验。
 
 将本仓库 policy 目录以符号链接安装到 RoboDojo 的 XPolicyLab；仿真环境中还需有 Python `numpy` 和 `Pillow`。`configs/robodojo_mixed.example.json` 的 URL、模型名、密钥环境变量要换成真实服务，冻结副本后再运行。示例：
 

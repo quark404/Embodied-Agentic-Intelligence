@@ -115,16 +115,16 @@
     </section>
 
     <section class="slide" data-slide="8" aria-labelledby="slide-title-9">
-      <div class="slide-heading"><p class="eyebrow">08 / 第二阶段：让 Qwen 真正学会</p><h2 id="slide-title-9">先诊断，再训练，最后撤除专家。</h2><p class="subtitle">训练后仍用独立 RoboDojo 闭环来验收，而不拿离线得分代替机器人成功。</p></div>
-      <div class="roadmap-figure"><img src="./assets/research-roadmap.svg" alt="从未训练差距诊断、轨迹与标签、示范学习、可验证局部训练、求助策略到关闭 Astra 的独立闭环验收的研究路线图"></div>
-      <p class="slide-footnote">借鉴 RoboICL、ToolRL、Router-R1 等的方法线索；新增论文尚未逐篇核读。Agentic RL 目前是规划，尚未训练模型。</p>
+      <div class="slide-heading"><p class="eyebrow">08 / 两阶段研究：先诊断，再低成本 RL</p><h2 id="slide-title-9">先找值得补强的能力，再让 Qwen 学会。</h2><p class="subtitle">能力诊断与低成本 RL 都是研究重点；最终用独立 RoboDojo 闭环验收。</p></div>
+      <div class="roadmap-figure"><img src="./assets/research-roadmap.svg" alt="从六组未训练粗筛和专项干预形成闭源补强能力地图，再构建可执行轻量环境、直接多轮 RL 与成本消融，最后关闭 Astra 独立闭环验收的路线图"></div>
+      <p class="slide-footnote">当前不考虑 SFT。Agentic RL 尚在规划；论文线索未逐篇核读，能力地图与训练效果均待真实实验验证。</p>
     </section>
 
     <section class="slide slide-final" data-slide="9" aria-labelledby="slide-title-10">
       <div class="slide-heading"><p class="eyebrow">09 / 当前进度与下一步</p><h2 id="slide-title-10">先让真实 RoboDojo 链路跑通。</h2></div>
       <div class="status-grid">
-        <article class="status-card status-done"><span class="status-icon">✓</span><h3>已搭建</h3><p>六组 Harness、Qwen/Astra 角色限制、任务级图像记忆、XPolicyLab 接入和结果汇总。</p><div class="status-meta">38 个假环境 / 契约测试通过</div></article>
-        <article class="status-card status-pending"><span class="status-icon">◌</span><h3>待真实验证</h3><p>Isaac 仿真、Qwen 与 Astra 端点、RoboDojo 原生 episode、实际成功率和调用成本。</p><div class="status-meta">目前没有本项目的机器人跑分</div></article>
+        <article class="status-card status-done"><span class="status-icon">✓</span><h3>已搭建</h3><p>六组 Harness、图像记忆、环境桥接和汇总；Qwen3.5-27B 本地端点通过图像与工具接口检查。</p><div class="status-meta">40 个本地测试及 4 项真实端点检查通过</div></article>
+        <article class="status-card status-pending"><span class="status-icon">◌</span><h3>待真实验证</h3><p>Isaac 仿真、Astra 端点、RoboDojo 原生 episode、实际成功率和完整调用成本。</p><div class="status-meta">目前没有本项目的机器人跑分</div></article>
       </div>
       <div class="next-steps"><div><b>1</b><span>跑通单个原生 episode</span></div><i aria-hidden="true">→</i><div><b>2</b><span>固定简单任务先导</span></div><i aria-hidden="true">→</i><div><b>3</b><span>再开展完整对照与训练</span></div></div>
       <div class="sources"><span>依据：</span><a href="../docs/任务规划.md">中文任务规划</a><a href="../research/benchmarks/mixed_agent_robodojo.md">RoboDojo 实验协议</a><a href="../research/benchmarks/agentic_rl_roadmap.md">Agentic RL 路线</a></div>

@@ -4,6 +4,8 @@
 
 这是**未训练模型的第一阶段协议**。用户提供的 Agentic RL 方案已作为[第二阶段路线](agentic_rl_roadmap.md)并入项目；训练后的 Qwen 使用新 checkpoint、新条件名和独立训练/测试划分，不改写本文件的六组、Astra 配额或原生评测规则。
 
+2026-10-29 对齐：第一阶段独立研究“哪些能力最值得闭源补强”，不是只为训练收集数据。本六组提供功能级粗筛，不能仅凭规划或诊断增益认定某种纯能力导致变化。更细的能力干预、Qwen 自建议对照与独立确认按[能力诊断计划](../../docs/能力诊断与推进计划.md)另建版本。第二阶段依据这些证据直接多轮 RL，当前不考虑 SFT。
+
 ## 为什么选择受限工具范式
 
 [RoboICL（2026-09）](https://github.com/Mosi-AI/RoboICL/tree/17b379a6deea33f71bd31e05bd60d1daf627acfb) 将 GPT-6 Astra 放进完整的多轮动作控制与示范/交互记忆流程；[PyRUA-Lean（2026-10）](https://github.com/DAGroup-PKU/PyRUA-Lean/tree/fdf6e870654254e2c0c891ee407313fa48bdd0f9) 让模型写机器人 Python cells；[HexaShell（2026-10）](https://github.com/HexaFuture/HexaShell/tree/d1a2a24dc4c528a652b359fd689398530ef941d8) 用 GPT-6 Astra 的代码 Agent 与失败后工具修复，在 RoboDojo 官方评测报告 46.9%。三者展示了强模型与执行接口协同的可能性，但公开分数采用不同工具、模型、动作与任务协议，不能互作直接消融。

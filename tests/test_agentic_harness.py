@@ -208,6 +208,7 @@ class HarnessTests(unittest.TestCase):
                 tuple(bank.recall(task_id="test-1", episode_id="test-1-seed0",
                                   subtask_id="open")), ("open",))
             self.assertEqual(policy.decide(context).tool, "place")
+            self.assertIn("without Markdown code fences", payloads[0]["messages"][0]["content"])
             parts = payloads[0]["messages"][1]["content"]
             images = [p["image_url"]["url"] for p in parts if p["type"] == "image_url"]
             self.assertEqual(len(images), 2)
@@ -227,6 +228,7 @@ class HarnessTests(unittest.TestCase):
         subtasks = planner.plan(TASK, {"images": {"front": _png((255, 0, 0))}}, (), None)
         self.assertEqual([s.id for s in subtasks], ["open", "deliver"])
         self.assertEqual(subtasks[0].tags, ("cabinet",))
+        self.assertIn("without Markdown code fences", payloads[0]["messages"][0]["content"])
         parts = payloads[0]["messages"][1]["content"]
         self.assertEqual(sum(p["type"] == "image_url" for p in parts), 1)
 

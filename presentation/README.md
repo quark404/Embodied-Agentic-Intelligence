@@ -4,4 +4,4 @@
 
 幻灯片用通俗语言介绍研究目标、Qwen 与 Astra 的分工、六组 RoboDojo 对照、任务级起始图像记忆、任务选择、预期结论的判读方式和后续 Agentic RL 路线。四张 SVG 图位于 [assets](assets)，可以单独打开或在其他材料中复用。
 
-内容依据 [任务规划](../docs/任务规划.md)、[RoboDojo 实验协议](../research/benchmarks/mixed_agent_robodojo.md)与 [Agentic RL 路线](../research/benchmarks/agentic_rl_roadmap.md)。图均为研究设计示意；项目尚未完成真实 RoboDojo、Qwen/Astra 端点验证或训练后跑分。
+内容依据 [任务规划](../docs/任务规划.md)、[RoboDojo 实验协议](../research/benchmarks/mixed_agent_robodojo.md)与 [Agentic RL 路线](../research/benchmarks/agentic_rl_roadmap.md)。图均为研究设计示意；2026-10-29 已通过本地 Qwen3.5-27B 端点的多模态/工具接口检查，但项目尚未完成真实 RoboDojo、Astra 端点验证或训练后跑分。

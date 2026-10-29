@@ -1,0 +1,33 @@
+{
+  "checked_on": "2026-10-29",
+  "robodojo": {
+    "url": "https://github.com/Mosi-AI/RoboDojo.git",
+    "revision": "00ef04cd245bfa76e6f1e0bd8383c82f7964f942"
+  },
+  "xpolicylab": {
+    "url": "https://github.com/XPolicyLab/XPolicyLab.git",
+    "revision": "bb9a0b5f5136a74503b679af830bfd0a3a837d5c"
+  },
+  "isaaclab": {
+    "url": "https://github.com/yuechen0614/IsaacLab.git",
+    "revision": "afca7b09d60d8beb9c1cb28b43066499940b969b"
+  },
+  "curobo": {
+    "url": "https://github.com/yuechen0614/curobo.git",
+    "revision": "d17b54ce32cba095c0b000c4c58777075d11de0e"
+  },
+  "assets": {
+    "repo_id": "RoboDojo-Benchmark/RoboDojo",
+    "revision": "0e0739f55524af015344a2b31e791cb3486d589d",
+    "allow_patterns": ["Assets/**"],
+    "file_count": 15365,
+    "total_bytes": 41269513111
+  },
+  "simulator_target": {
+    "python": "3.11",
+    "isaacsim": "5.1.0",
+    "torch": "2.7.0",
+    "torch_cuda": "cu128",
+    "validated": false
+  }
+}
