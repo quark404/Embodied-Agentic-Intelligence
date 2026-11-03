@@ -11,6 +11,77 @@ from pathlib import Path
 from .schedule import native_result_dir
 
 
+PAIRED_CONDITIONS = (
+    ("q_only", "hybrid_plan"),
+    ("q_only", "hybrid_diagnose"),
+    ("q_only", "hybrid_both"),
+    ("hybrid_both", "hybrid_both_memory"),
+    ("q_only", "astra_reference"),
+    ("hybrid_plan", "hybrid_both"),
+)
+
+
+def summarize_paired_comparison(indexed: dict, control: str, treatment: str) -> dict:
+    """Describe matched valid episodes without treating missing data as failures."""
+    matched_keys = [key for key, arms in indexed.items()
+                    if control in arms and treatment in arms]
+    matched = [(indexed[key][control], indexed[key][treatment]) for key in matched_keys]
+    paired_count = len(matched)
+    control_count = sum(control in arms for arms in indexed.values())
+    treatment_count = sum(treatment in arms for arms in indexed.values())
+    control_successes = sum(before["success"] for before, after in matched)
+    treatment_successes = sum(after["success"] for before, after in matched)
+    control_failures = paired_count - control_successes
+    treatment_wins = sum(not before["success"] and after["success"]
+                         for before, after in matched)
+    control_wins = sum(before["success"] and not after["success"]
+                       for before, after in matched)
+    resources = {}
+    for metric in ("estimated_model_cost_usd", "elapsed_seconds", "executed_physical_steps"):
+        values = [(before.get(metric), after.get(metric)) for before, after in matched]
+        known = [(before, after) for before, after in values
+                 if all(type(value) in (int, float) and math.isfinite(value) and value >= 0
+                        for value in (before, after))]
+        resources[metric] = {
+            "complete_pairs": len(known),
+            "missing_or_invalid_pairs": paired_count - len(known),
+            "control_mean": sum(before for before, after in known) / len(known) if known else None,
+            "treatment_mean": sum(after for before, after in known) / len(known) if known else None,
+            "mean_difference": (sum(after - before for before, after in known) / len(known)
+                                if known else None),
+        }
+    return {
+        "control": control,
+        "treatment": treatment,
+        "status": "paired" if paired_count else "no_valid_pairs",
+        "paired_episodes": paired_count,
+        "valid_control_episodes": control_count,
+        "valid_treatment_episodes": treatment_count,
+        "unmatched_control_episodes": control_count - paired_count,
+        "unmatched_treatment_episodes": treatment_count - paired_count,
+        "control_pair_coverage": paired_count / control_count if control_count else None,
+        "treatment_pair_coverage": paired_count / treatment_count if treatment_count else None,
+        "paired_tasks": len({key[0] for key in matched_keys}),
+        "paired_task_layout_groups": len({(key[0], key[2]) for key in matched_keys}),
+        "control_success_rate": control_successes / paired_count if paired_count else None,
+        "treatment_success_rate": treatment_successes / paired_count if paired_count else None,
+        "success_rate_difference": ((treatment_successes - control_successes) / paired_count
+                                    if paired_count else None),
+        "score_difference": (sum(after["score"] - before["score"] for before, after in matched)
+                             / paired_count if paired_count else None),
+        "treatment_wins": treatment_wins,
+        "control_wins": control_wins,
+        "both_succeeded": sum(before["success"] and after["success"] for before, after in matched),
+        "both_failed": sum(not before["success"] and not after["success"]
+                           for before, after in matched),
+        "control_failure_episodes": control_failures,
+        "control_success_episodes": control_successes,
+        "baseline_failure_rescue_rate": treatment_wins / control_failures if control_failures else None,
+        "baseline_success_harm_rate": control_wins / control_successes if control_successes else None,
+        "paired_resources": resources,
+    }
+
+
 def collect_results(schedule_path: str | Path, robodojo_root: str | Path) -> dict:
     schedule = json.loads(Path(schedule_path).read_text(encoding="utf-8"))
     if not isinstance(schedule, list) or not schedule:
@@ -65,11 +136,15 @@ def collect_results(schedule_path: str | Path, robodojo_root: str | Path) -> dic
                         spec = prices.get(model, {})
                         input_price = spec.get("input_usd_per_million_tokens")
                         output_price = spec.get("output_usd_per_million_tokens")
-                        if input_price is None or output_price is None:
+                        if (any(type(price) not in (int, float) or not math.isfinite(price) or price < 0
+                                for price in (input_price, output_price))
+                                or not isinstance(usage, dict)
+                                or any(type(usage.get(token)) is not int or usage[token] < 0
+                                       for token in ("input_tokens", "output_tokens"))):
                             costs = []
                             break
-                        costs.append((usage.get("input_tokens", 0) * input_price +
-                                      usage.get("output_tokens", 0) * output_price) / 1_000_000)
+                        costs.append((usage["input_tokens"] * input_price +
+                                      usage["output_tokens"] * output_price) / 1_000_000)
                     if costs or not trace["model_calls"]:
                         model_cost = round(sum(costs), 8)
             error = trace.get("error") if trace else None
@@ -140,22 +215,10 @@ def collect_results(schedule_path: str | Path, robodojo_root: str | Path) -> dic
         if row["condition"] in indexed[key]:
             raise ValueError(f"Duplicate scored episode for {key} and {row['condition']}")
         indexed[key][row["condition"]] = row
-    pairs = {}
-    for treatment in ("hybrid_plan", "hybrid_diagnose", "hybrid_both",
-                      "hybrid_both_memory", "astra_reference"):
-        control = "hybrid_both" if treatment == "hybrid_both_memory" else "q_only"
-        matched = [(arm[control], arm[treatment]) for arm in indexed.values()
-                   if control in arm and treatment in arm]
-        if matched:
-            pairs[f"{control}_vs_{treatment}"] = {
-                "paired_episodes": len(matched),
-                "success_rate_difference": sum(b["success"] - a["success"]
-                                               for a, b in matched) / len(matched),
-                "score_difference": sum(b["score"] - a["score"]
-                                        for a, b in matched) / len(matched),
-                "treatment_wins": sum(not a["success"] and b["success"] for a, b in matched),
-                "control_wins": sum(a["success"] and not b["success"] for a, b in matched),
-            }
+    scheduled_conditions = {item["condition"] for item in schedule}
+    pairs = {f"{control}_vs_{treatment}": summarize_paired_comparison(indexed, control, treatment)
+             for control, treatment in PAIRED_CONDITIONS
+             if control in scheduled_conditions and treatment in scheduled_conditions}
     return {"runs": runs, "episodes": rows, "conditions": condition_summary,
             "raw_native_conditions": summarize(raw_by_condition),
             "exclusions": {name: dict(reasons) for name, reasons in exclusions.items()},

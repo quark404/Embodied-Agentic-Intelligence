@@ -29,7 +29,8 @@ def checkout(root: Path, spec: dict, *, sparse: bool = False) -> None:
         raise RuntimeError(f"Revision mismatch at {root}")
 
 
-def prepare(destination: Path) -> dict:
+def prepare(destination: Path, *, sim_submodules: bool = False,
+            policy_root: Path = PROJECT_ROOT) -> dict:
     if destination.exists() or destination.is_symlink():
         raise FileExistsError(f"Refusing to change an existing path: {destination}")
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -45,22 +46,33 @@ def prepare(destination: Path) -> dict:
     if xpl_root.is_dir() and not any(xpl_root.iterdir()):
         xpl_root.rmdir()
     checkout(xpl_root, lock["xpolicylab"], sparse=True)
+    if sim_submodules:
+        for relative, key in (("third_party/IsaacLab", "isaaclab"),
+                              ("third_party/curobo", "curobo")):
+            submodule = destination / relative
+            if submodule.is_dir() and not any(submodule.iterdir()):
+                submodule.rmdir()
+            checkout(submodule, lock[key])
     policy = xpl_root / "policy/Embodied_Agentic"
     policy.parent.mkdir(exist_ok=True)
-    policy.symlink_to(PROJECT_ROOT / "integrations/xpolicylab/Embodied_Agentic",
+    policy.symlink_to(policy_root.resolve() / "integrations/xpolicylab/Embodied_Agentic",
                       target_is_directory=True)
     return {"robodojo_root": str(destination.resolve()),
             "source_only": True, "policy_link": str(policy),
             "robodojo_revision": lock["robodojo"]["revision"],
             "xpolicylab_revision": lock["xpolicylab"]["revision"],
+            "sim_submodules_fetched": sim_submodules,
             "simulator_installed": False, "assets_downloaded": False}
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("destination", type=Path)
+    parser.add_argument("--sim-submodules", action="store_true")
+    parser.add_argument("--policy-root", type=Path, default=PROJECT_ROOT)
     args = parser.parse_args()
-    print(json.dumps(prepare(args.destination.absolute()), indent=2))
+    print(json.dumps(prepare(args.destination.absolute(), sim_submodules=args.sim_submodules,
+                             policy_root=args.policy_root), indent=2))
 
 
 if __name__ == "__main__":

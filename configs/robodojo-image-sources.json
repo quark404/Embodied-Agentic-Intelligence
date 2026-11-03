@@ -1,0 +1,33 @@
+{
+  "robodojo": {
+    "url": "https://codeload.github.com/Mosi-AI/RoboDojo/tar.gz/00ef04cd245bfa76e6f1e0bd8383c82f7964f942",
+    "sha256": "2cd484e5bf77f24d561d66ef91a455296523e638d0d0376fd9daba095452ce0a",
+    "archive_root": "RoboDojo-00ef04cd245bfa76e6f1e0bd8383c82f7964f942",
+    "revision": "00ef04cd245bfa76e6f1e0bd8383c82f7964f942"
+  },
+  "xpolicylab": {
+    "url": "https://codeload.github.com/XPolicyLab/XPolicyLab/tar.gz/bb9a0b5f5136a74503b679af830bfd0a3a837d5c",
+    "sha256": "44a5f0e9a08a2b2b960c658c768a49a9c7378314c8baed3fed0381087138152b",
+    "archive_root": "XPolicyLab-bb9a0b5f5136a74503b679af830bfd0a3a837d5c",
+    "revision": "bb9a0b5f5136a74503b679af830bfd0a3a837d5c"
+  },
+  "isaaclab": {
+    "url": "https://codeload.github.com/yuechen0614/IsaacLab/tar.gz/afca7b09d60d8beb9c1cb28b43066499940b969b",
+    "sha256": "ccb4caaa2df9542511274f04adfc831d3e1b35f04a7f5fc128d10864537dc0a3",
+    "archive_root": "IsaacLab-afca7b09d60d8beb9c1cb28b43066499940b969b",
+    "revision": "afca7b09d60d8beb9c1cb28b43066499940b969b"
+  },
+  "curobo": {
+    "url": "https://codeload.github.com/yuechen0614/curobo/tar.gz/d17b54ce32cba095c0b000c4c58777075d11de0e",
+    "sha256": "64684411db8afcb8f372dfd6896a513a778b2319111a391f488082c5c5dced53",
+    "archive_root": "curobo-d17b54ce32cba095c0b000c4c58777075d11de0e",
+    "revision": "d17b54ce32cba095c0b000c4c58777075d11de0e"
+  },
+  "isaaclab_headless_packaging": {
+    "file": "source/isaaclab/setup.py",
+    "original_sha256": "0839e1877f8558f0f5b5371b303cfdc0f3275e36c1980b99419218581922589c",
+    "replace": "starlette==0.49.1",
+    "with": "starlette==0.45.3",
+    "reason": "IsaacSim 5.1 pins fastapi==0.115.7 which requires starlette<0.46. No Python source in this pinned IsaacLab archive imports starlette; the pin is listed for livestream. This headless image does not expose livestream services. Only this packaging requirement is changed; benchmark task and reward code remain hash-verified."
+  }
+}

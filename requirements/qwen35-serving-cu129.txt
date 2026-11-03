@@ -1,0 +1,6 @@
+--extra-index-url https://download.pytorch.org/whl/cu129
+vllm @ https://github.com/vllm-project/vllm/releases/download/v0.23.0/vllm-0.23.0%2Bcu129-cp38-abi3-manylinux_2_28_x86_64.whl#sha256=8bc2203995d061e6b988916b71b9dee8a5970f5fdc5f37d4445a877a2fab2cc1
+torch==2.11.0+cu129
+torchaudio==2.11.0+cu129
+torchvision==0.26.0+cu129
+transformers==5.8.1

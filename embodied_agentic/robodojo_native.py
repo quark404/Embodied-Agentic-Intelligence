@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib
 import inspect
+import hashlib
 import json
 import math
 import os
@@ -449,6 +450,18 @@ def run_official_episode(task_env, *, factory: Callable | None = None) -> dict:
     summary["condition"] = os.environ.get("EMBODIED_CONDITION", "q_only")
     summary["native_result_pending"] = str(Path(task_env.save_dir) / "_result.json")
     root.mkdir(parents=True, exist_ok=True)
+    if adapter.last_observation is not None:
+        camera_root = root / 'cameras'
+        camera_root.mkdir(exist_ok=False)
+        summary['camera_artifacts'] = {}
+        for camera in CAMERAS:
+            content = adapter.last_observation['images'][camera]
+            path = camera_root / f'{camera}.png'
+            with path.open('xb') as output:
+                output.write(content)
+            summary['camera_artifacts'][camera] = {
+                'path': f'cameras/{camera}.png', 'sha256': hashlib.sha256(content).hexdigest(),
+                'bytes': len(content)}
     public = {key: value for key, value in summary.items() if key != "events"}
     (root / "summary.json").write_text(json.dumps(public, indent=2, ensure_ascii=False) + "\n",
                                        encoding="utf-8")

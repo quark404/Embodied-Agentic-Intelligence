@@ -9,13 +9,13 @@ import os
 from pathlib import Path
 
 from cluster_eval.credentials import CONFIG_PATH, load_token
-
-QUEUE = "project-5090-robot-lab-acloud-langfang"
+from cluster_eval.prepare import QUEUE, QUEUE_CLUSTERS
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--queue", choices=QUEUE_CLUSTERS, default=QUEUE)
     args = parser.parse_args()
     if args.output.exists():
         parser.error("Choose a new output path; existing audit records are not replaced")
@@ -32,10 +32,10 @@ def main() -> None:
         raise SystemExit("No existing AIDI credential; configure through your approved private channel")
     manager = AIDIJobManager(token=credential)
     try:
-        queues = [item for item in manager.list_queues(all_visible=True) if item.name == QUEUE]
+        queues = [item for item in manager.list_queues(all_visible=True) if item.name == args.queue]
         fields = ("name", "cluster", "project_id", "tenant", "category", "type", "queue_version")
         status = [item.model_dump(exclude={"raw"})
-                  for item in manager.list_queue_status(queue=QUEUE)]
+                  for item in manager.list_queue_status(queue=args.queue)]
         report = {"checked_at": datetime.now(timezone.utc).isoformat(),
                   "queue": [{key: getattr(item, key, None) for key in fields} for item in queues],
                   "status": status, "submitted": False,

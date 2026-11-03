@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from cluster_eval.prepare import validate_template, write_private
+from cluster_eval.prepare import QUEUE, QUEUE_CLUSTERS, queue_cluster, validate_template, write_private
 from cluster_eval.probe import check_context, inspect_gpus
 from cluster_eval.credentials import load_token, save_token
 from cluster_eval.submit_preflight import job_environment, verify_artifacts
@@ -25,6 +25,44 @@ class ClusterEvalTests(unittest.TestCase):
         validate_template(self.config)
         self.assertEqual(self.config["python_launcher"], "python3")
         self.assertEqual(self.config["python_executable"], "cluster_eval/probe.py")
+
+    def test_only_image_inventory_accepts_the_reviewed_read_only_inputs(self):
+        config = json.loads((ROOT / 'configs/aidi_5090_image_inventory.example.json').read_text())
+        validate_template(config, profile='image_inventory')
+        with self.assertRaises(ValueError):
+            validate_template(config)
+        for key, value in (('input_bucket', 'another-bucket'), ('output_bucket', 'robot_lab'),
+                           ('gpu_per_worker', 3), ('wall_time', 30)):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                validate_template({**config, key: value}, profile='image_inventory')
+
+    def test_reviewed_queues_use_verified_clusters(self):
+        self.assertEqual(self.config["queue_name"], QUEUE)
+        self.assertEqual(QUEUE_CLUSTERS, {
+            "project-5090-robot-lab-acloud-langfang": "acloud-langfang",
+            "project-5090-robot-lab-debug-bcloud-bj": "bcloud-bj-zone1",
+            "project-5090-horizon-labs-aidc": "hcloud",
+        })
+        for queue, cluster in QUEUE_CLUSTERS.items():
+            with self.subTest(queue=queue):
+                config = copy.deepcopy(self.config)
+                config["queue_name"] = queue
+                validate_template(config)
+                self.assertEqual(queue_cluster(queue), cluster)
+
+    def test_unreviewed_queue_is_rejected(self):
+        for queue in (None, True, [], "another-queue"):
+            with self.subTest(queue=queue), self.assertRaises(ValueError):
+                queue_cluster(queue)
+
+    def test_debug_queue_keeps_resource_limits(self):
+        for key, value in (("gpu_per_worker", 2), ("num_workers", 2),
+                           ("priority", 2), ("wall_time", 16), ("max_retries", 1)):
+            config = copy.deepcopy(self.config)
+            config["queue_name"] = "project-5090-robot-lab-debug-bcloud-bj"
+            config[key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                validate_template(config)
 
     def test_manager_wrapper_refuses_mutations(self):
         self.assertEqual(validate_arguments(["manager", "queues"]), ["queues"])

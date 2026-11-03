@@ -10,7 +10,8 @@ LAUNCHER = Path(__file__).resolve().parents[1] / "scripts/serve_qwen35.sh"
 
 
 class QwenServingTests(unittest.TestCase):
-    def run_launcher(self, used_memory, *, selected_gpu="6", allocation=None):
+    def run_launcher(self, used_memory, *, selected_gpu="6", allocation=None,
+                     total_memory=96000, extra_environment=None):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             tools = root / "tools"
@@ -18,7 +19,12 @@ class QwenServingTests(unittest.TestCase):
             tools.mkdir()
             (environment / "bin").mkdir(parents=True)
             files = {
-                tools / "nvidia-smi": '#!/bin/sh\nprintf "%s\\n" "$FAKE_GPU_MEMORY"\n',
+                tools / "nvidia-smi": (
+                    '#!/bin/sh\ncase "$*" in\n'
+                    '*memory.total*) printf "%s\\n" "$FAKE_GPU_TOTAL" ;;\n'
+                    '*) if [ "$2" = "${FAKE_BUSY_GPU:-none}" ]; then echo 6000; '
+                    'else printf "%s\\n" "$FAKE_GPU_MEMORY"; fi ;;\nesac\n'
+                ),
                 environment / "bin/ninja": "#!/bin/sh\nexit 0\n",
                 environment / "bin/vllm": (
                     "#!/usr/bin/env python3\n"
@@ -34,7 +40,11 @@ class QwenServingTests(unittest.TestCase):
                 path.chmod(0o755)
             variables = dict(os.environ, QWEN_ENV=str(environment), QWEN_GPU="6",
                              QWEN_PORT="18000", FAKE_GPU_MEMORY=str(used_memory),
+                             FAKE_GPU_TOTAL=str(total_memory),
                              PATH=f"{tools}:{os.environ['PATH']}")
+            variables.pop('QWEN_MAX_MODEL_LEN', None)
+            variables.pop('QWEN_MAX_NUM_SEQS', None)
+            variables.update(extra_environment or {})
             variables.pop("CUDA_VISIBLE_DEVICES", None)
             if allocation is not None:
                 variables["CUDA_VISIBLE_DEVICES"] = allocation
@@ -84,6 +94,44 @@ class QwenServingTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Could not verify GPU memory", result.stderr)
         self.assertEqual(result.stdout, "")
+
+    def test_two_allocated_5090s_use_tensor_parallel_bf16(self):
+        result, _ = self.run_launcher(0, selected_gpu='1,2', allocation='0,1,2',
+            total_memory=32607, extra_environment={'QWEN_MAX_MODEL_LEN': '16384',
+                                                 'QWEN_MAX_NUM_SEQS': '1'})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        launch = json.loads(result.stdout)
+        self.assertEqual(launch['visible'], '1,2')
+        for flag, expected in (('--tensor-parallel-size', '2'), ('--dtype', 'bfloat16'),
+                               ('--max-model-len', '16384'), ('--max-num-seqs', '1')):
+            self.assertEqual(launch['args'][launch['args'].index(flag) + 1], expected)
+        self.assertNotIn('--quantization', launch['args'])
+
+    def test_single_5090_is_rejected_before_model_start(self):
+        result, _ = self.run_launcher(0, total_memory=32607)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('insufficient memory', result.stderr)
+        self.assertEqual(result.stdout, '')
+
+    def test_every_selected_gpu_must_be_allocated(self):
+        result, _ = self.run_launcher(0, selected_gpu='1,2', allocation='0,1')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('refusing to override', result.stderr)
+        self.assertEqual(result.stdout, '')
+
+    def test_duplicate_and_malformed_gpu_lists_are_rejected(self):
+        for selection in ('1,1', '01,1', '0,1,2', '1,', '1, 2', '-1'):
+            with self.subTest(selection=selection):
+                result, _ = self.run_launcher(0, selected_gpu=selection)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, '')
+
+    def test_busy_second_gpu_is_not_shared(self):
+        result, _ = self.run_launcher(0, selected_gpu='1,2', allocation='0,1,2',
+                                     extra_environment={'FAKE_BUSY_GPU': '2'})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('GPU 2 is already using', result.stderr)
+        self.assertEqual(result.stdout, '')
 
 
 if __name__ == "__main__":

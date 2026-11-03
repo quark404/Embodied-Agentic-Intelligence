@@ -81,4 +81,4 @@ python3 -m embodied_agentic.reporting \
   --output runs/pilot01/report.json
 ```
 
-报告同时保留所有原生计分记录和主比较的有效样本：缺失 harness 轨迹、未完成 native run、服务或仿真故障不进入主比较分母；模型输出/决策违反协议则计为模型失败。可在每个模型配置中填入 `input_usd_per_million_tokens` 和 `output_usd_per_million_tokens` 估算美元费用；缺少单价时金额标为未知，token 与时长仍会记录。源论文、上游接口与适配器历史见[研究目录](research/benchmarks/README.md)及[上游集成说明](docs/上游框架集成.md)。
+报告同时保留所有原生计分记录和主比较的有效样本：缺失 harness 轨迹、未完成 native run、服务或仿真故障不进入主比较分母；模型输出/决策违反协议则计为模型失败。可在每个模型配置中填入 `input_usd_per_million_tokens` 和 `output_usd_per_million_tokens` 估算美元费用；缺少单价时金额标为未知，token 与时长仍会记录。配对报告还包含规划之上增加诊断的比较、救回/损害比例、配对覆盖率及同样本成本差；零有效配对保留为未知，不记作零增益。字段定义和归因边界见[配对评测报告](docs/配对评测报告.md)。源论文、上游接口与适配器历史见[研究目录](research/benchmarks/README.md)及[上游集成说明](docs/上游框架集成.md)。

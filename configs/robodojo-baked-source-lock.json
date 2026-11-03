@@ -1,0 +1,30 @@
+{
+  "reference_commit": "00ef04cd245bfa76e6f1e0bd8383c82f7964f942",
+  "scope": "Only the task definition, task config and reward logic; not a claim that the complete baked source is the same commit",
+  "curobo_build_metadata": {
+    "reference_commit": "d17b54ce32cba095c0b000c4c58777075d11de0e",
+    "local_packaging_version": "0.8.0+eai.baked",
+    "whole_source_revision_verified": false,
+    "files": {
+      "setup.py": "8c288379b3a699fe11b0f9c9e9b41efcdc8072b882423a9a78be2ffbff4a0d95",
+      "pyproject.toml": "4c93ee00a80dbc46e45fb6a1dd9486b57c8547e59bd948c30978a8ac7ed03a44",
+      "curobo/__init__.py": "f1141c8054044fb61d26925cc2ededf58f11c53bde6d36cea02421573e11b872"
+    }
+  },
+  "reviewed_launchers": {
+    "b27ca311a2f0eb9b0ac182d7ed0d7e8e13f08cc5d1467eff6f7df3ffdb905f3e": {
+      "forwards_kit_args": false,
+      "origin": "Original reference commit"
+    },
+    "339b8082f2eb002eb61603634dfa1d883cf0a13cd55ea537e40812e7cde9e458": {
+      "forwards_kit_args": true,
+      "origin": "Reviewed prebuilt image: environment-config directory override and Kit argument forwarding only"
+    }
+  },
+  "files": {
+    "task/RoboDojo/tasks/general_pickup.py": "1a9eef7fe518f9d2c6805ad1a8f97c1045fa83726f84b9c63f67ffdfabbc40a7",
+    "task/RoboDojo/config/general_pickup.yml": "35de68117cb0ed596b30db1c62f1f9090f2cd1237242a03d5aaeb7186e791d93",
+    "env/reward_manager/reward_manager.py": "bc56efd3aaa861b4b38960dc4fb7778a9b4da9cf131f815ac3170300dd233a41",
+    "env/reward_manager/func_parser.py": "eb928a05c3eb6bae429a922c59e64272c2c3851c22d779143d45627e47b3a504"
+  }
+}
